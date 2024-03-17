@@ -74,6 +74,10 @@ export const userSlice = createSlice({
     setHasErrors(state, { payload }) {
       state.hasErrors = payload;
     },
+    onLogout(state) {
+      state.loggedIn = false;
+      localStorage.removeItem(AUTH_TOKEN_NAME);
+    },
   },
   extraReducers(builder) {
     builder

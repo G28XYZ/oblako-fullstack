@@ -12,8 +12,6 @@ import { MainPage } from "../../pages/main";
 import { Loading } from "../loading";
 
 export function App() {
-  const { isLoading } = useSelector((state) => state.app);
-
   const { dispatch, actions } = useActions();
 
   useEffect(() => {

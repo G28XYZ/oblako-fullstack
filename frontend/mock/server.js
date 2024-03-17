@@ -77,6 +77,15 @@ server.get("/me", (req, res) => {
   );
 });
 
+server.get("/users", (req, res) => {
+  handleRequest(
+    async () => {
+      return getDbData.users().value();
+    },
+    { res, req }
+  );
+});
+
 server.post("/signin", (req, res) => {
   handleRequest(
     async () => {
@@ -104,7 +113,15 @@ server.post("/signup", (req, res) => {
       if (user) {
         throw new Error("Пользователь с таким email уже зарегистрирован");
       }
-      users.push({ username, email, password: await hash(password, await genSalt(10)) }).write();
+      users
+        .push({
+          id: users.value().length + 1,
+          role: "admin",
+          username,
+          email,
+          password: await hash(password, await genSalt(10)),
+        })
+        .write();
 
       return generateToken({ email });
     },

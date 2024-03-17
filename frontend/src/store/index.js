@@ -2,17 +2,20 @@ import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import { appSlice } from "../components/app/reducer";
 import { useDispatch } from "react-redux";
 import { userSlice } from "../pages/auth";
+import { mainSlice } from "../pages/main";
 import { checkValidForm } from "../pages/auth/middleware";
 import { loadingMiddleware } from "../components/app/middleware";
 
 const slices = {
   appSlice,
   userSlice,
+  mainSlice,
 };
 
 const actions = {
   ...appSlice.actions,
   ...userSlice.actions,
+  ...mainSlice.actions,
 };
 
 const rootReducer = combineReducers(

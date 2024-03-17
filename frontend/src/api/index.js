@@ -9,6 +9,7 @@ class Api {
     login: `${this.#baseUrl}/signin`,
     register: `${this.#baseUrl}/signup`,
     me: `${this.#baseUrl}/me`,
+    users: `${this.#baseUrl}/users`,
   };
 
   async #handleRequest(response) {
@@ -42,6 +43,8 @@ class Api {
       body: JSON.stringify(body),
       headers: { ...this.#headers, "Content-Type": "application/json;charset=utf-8" },
     }).then(this.#handleRequest);
+
+  getUsers = async () => await fetch(this.#urls.users, { headers: this.#headers }).then(this.#handleRequest);
 }
 
 export const api = new Api();

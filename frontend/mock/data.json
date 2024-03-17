@@ -4,10 +4,17 @@
       "id": "users",
       "data": [
         {
+          "id": 1,
           "role": "admin",
           "username": "test",
-          "email": "a@a.ru",
-          "password": "$2b$10$yAZW8au4NmWmQe2qLR8CxOn7dZDhC5kFH3PlXTw64gPTfK2o.c3iO"
+          "email": "a@a.ru"
+        },
+        {
+          "id": 2,
+          "role": "admin",
+          "username": "test",
+          "email": "aa@a.ru",
+          "password": "$2b$10$c3SygO0a6i7wipOKp238ROgyvjC6bQUH6Mv7U2H3aUeseXNUjsSQC"
         }
       ]
     }
