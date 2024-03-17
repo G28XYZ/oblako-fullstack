@@ -1,0 +1,15 @@
+{
+  "api": [
+    {
+      "id": "users",
+      "data": [
+        {
+          "role": "admin",
+          "username": "test",
+          "email": "a@a.ru",
+          "password": "$2b$10$yAZW8au4NmWmQe2qLR8CxOn7dZDhC5kFH3PlXTw64gPTfK2o.c3iO"
+        }
+      ]
+    }
+  ]
+}
