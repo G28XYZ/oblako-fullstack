@@ -2,15 +2,17 @@ import { Form, Button, Panel, Tooltip, Whisper } from "rsuite";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useActions } from "../../store";
+import { useEffect } from "react";
 
 export const SignUp = () => {
   const {
     dataFields: { username, password, email },
     errors,
     hasErrors,
+    requestErrors,
   } = useSelector((state) => state.user);
 
-  const { dispatch, actions } = useActions();
+  const { dispatch, actions } = useActions((actions) => actions.user);
 
   const submit = (
     <Button
@@ -23,7 +25,7 @@ export const SignUp = () => {
   );
 
   return (
-    <Panel bordered style={{ width: 400 }} header="Регистрация">
+    <Panel bordered style={{ width: 400, overflow: "visible" }} header="Регистрация">
       <p style={{ marginBottom: 10 }}>
         <span className="text-muted">Зарегистрированы? </span> <Link to="/signin"> Войти</Link>
       </p>
@@ -36,6 +38,7 @@ export const SignUp = () => {
             value={username}
             onChange={(value) => dispatch(actions.setUsername(value))}
             errorMessage={errors.username}
+            errorPlacement="rightEnd"
           />
         </Form.Group>
         <Form.Group>
@@ -48,6 +51,7 @@ export const SignUp = () => {
             type="email"
             onChange={(value) => dispatch(actions.setEmail(value))}
             errorMessage={errors.email}
+            errorPlacement="rightEnd"
           />
         </Form.Group>
         <Form.Group>
@@ -61,6 +65,7 @@ export const SignUp = () => {
             value={password}
             onChange={(value) => dispatch(actions.setPassword(value))}
             errorMessage={errors.password}
+            errorPlacement="rightEnd"
           />
         </Form.Group>
         <Form.Group>
@@ -77,6 +82,7 @@ export const SignUp = () => {
             submit
           )}
         </Form.Group>
+        {Boolean(requestErrors.length) && <span>{requestErrors.map((item) => item?.message)}</span>}
       </Form>
     </Panel>
   );

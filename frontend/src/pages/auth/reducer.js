@@ -3,26 +3,37 @@ import { api } from "../../api";
 import { isEmail, latinValue, maxLength, minLength, required, specSymbol, validator } from "../../utils/validator";
 import { AUTH_TOKEN_NAME } from "../../utils/constants";
 
-const getMe = createAsyncThunk("user/me", async () => {
+const handleResponse = async (fn, { rejectWithValue }) => {
+  let response;
+  try {
+    response = await fn();
+    if ("errors" in response) {
+      throw new Error(JSON.stringify(response?.errors));
+    }
+    return response;
+  } catch (e) {
+    return rejectWithValue(response?.errors || e);
+  }
+};
+
+const getMe = createAsyncThunk("user/me", async (_, thinkApi) => {
   if (api.getToken()) {
-    const response = await api.getMe();
-    return response.data;
+    const response = await handleResponse(api.getMe.bind(this), thinkApi);
+    return response?.data || response;
   }
 });
 
-const onLogin = createAsyncThunk("user/login", async (payload) => {
-  console.log(payload);
+const onLogin = createAsyncThunk("user/login", async (payload, thinkApi) => {
   if (payload) {
-    const response = await api.onLogin(payload);
-    return response.data;
+    const response = await handleResponse(api.onLogin.bind(this, payload), thinkApi);
+    return response?.data || response;
   }
 });
 
-const onRegister = createAsyncThunk("user/register", async (payload) => {
-  console.log(payload);
+const onRegister = createAsyncThunk("user/register", async (payload, thinkApi) => {
   if (payload) {
-    const response = await api.onRegister(payload);
-    return response.data;
+    const response = await handleResponse(api.onRegister.bind(this, payload), thinkApi);
+    return response?.data || response;
   }
 });
 
@@ -30,7 +41,9 @@ export const userSlice = createSlice({
   name: "user",
   initialState: {
     loggedIn: Boolean(false),
+    userId: 0,
     isAdmin: false,
+    requestErrors: [],
     dataFields: {
       username: String(""),
       password: String(""),
@@ -78,6 +91,9 @@ export const userSlice = createSlice({
       state.loggedIn = false;
       localStorage.removeItem(AUTH_TOKEN_NAME);
     },
+    clearRequestErrors(state) {
+      state.requestErrors = [];
+    },
   },
   extraReducers(builder) {
     builder
@@ -85,8 +101,27 @@ export const userSlice = createSlice({
         if (payload) {
           state.dataFields.username = payload.username;
           state.dataFields.email = payload.email;
+          state.userId = payload.id;
           state.loggedIn = true;
           state.isAdmin = payload.role === "admin";
+        }
+      })
+      .addCase(onRegister.fulfilled, (state, { payload }) => {
+        if (payload) {
+          const token = payload?.access_token;
+          api.setToken(token);
+          localStorage.setItem(AUTH_TOKEN_NAME, token);
+
+          state.dataFields.username = payload.username;
+          state.dataFields.email = payload.email;
+          state.userId = payload.id;
+          state.loggedIn = true;
+          state.isAdmin = payload.role === "admin";
+        }
+      })
+      .addCase(onRegister.rejected, (state, { payload }) => {
+        if (payload?.length) {
+          state.requestErrors = payload;
         }
       })
       .addCase(onLogin.fulfilled, (state, { payload }) => {

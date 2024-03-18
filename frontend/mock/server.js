@@ -1,23 +1,49 @@
 import jsonServer from "json-server";
 import jwt from "jsonwebtoken";
 import { compare, genSalt, hash } from "bcrypt";
+import lodash from "lodash";
 
 const server = jsonServer.create();
 const routes = jsonServer.router("mock/data.json");
 const middlewares = jsonServer.defaults();
 
+let isConnected = false;
+
 const getDbData = {
-  users() {
+  usersInterval: null,
+  users(origin = false) {
+    if (origin) {
+      return routes.db.get("api").find({ id: "users" });
+    }
     return routes.db.get("api").find({ id: "users" }).get("data");
+  },
+  init() {
+    if (!this.usersInterval) {
+      this.usersInterval = setInterval(() => {
+        if (!isConnected) {
+          const currentUsers = this.users().value();
+          if (!lodash.isEqual(currentUsers, users)) {
+            console.log("[JSON-SERVER] write users");
+            getDbData.users(true).set("data", users).write();
+          }
+        }
+      }, 1000);
+    }
   },
 };
 
+getDbData.init();
+
+let users = [...getDbData.users().value()];
+
 const authGuard = (req) => {
-  const token = req.headers.authorization?.replace("Bearer ", "");
-  if (!token || token === "null" || token === "undefined") {
-    throw new Error("Не авторизован");
+  if (req.headers?.authorization) {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token || token === "null" || token === "undefined") {
+      throw new Error("Не авторизован");
+    }
+    return token;
   }
-  return token;
 };
 
 const handleRequest = async (fn, { res, req, useAuthGuard = true }) => {
@@ -28,6 +54,8 @@ const handleRequest = async (fn, { res, req, useAuthGuard = true }) => {
     return res.status(200).json({ success: true, data });
   } catch (e) {
     return res.status(400).json({ errors: [{ message: e.message }], success: false });
+  } finally {
+    isConnected = false;
   }
 };
 
@@ -52,35 +80,82 @@ server.use(middlewares);
 
 server.use(jsonServer.bodyParser);
 
+server.use("*", (req, res, next) => {
+  isConnected = true;
+  next();
+});
+
 server.get("/me", (req, res) => {
   handleRequest(
     async () => {
       const token = authGuard(req);
       if (Boolean(token)) {
         const email = jwt.verify(token, "jwt_secret")?.data?.email;
-        console.log(email);
         if (!email) {
           throw new Error("Не авторизован");
         }
-        const users = getDbData.users().value();
         const user = users.find((user) => user.email === email);
         if (!user) {
           throw new Error("Не авторизован");
         }
-        if ("password" in user) {
-          delete user.password;
-        }
-        return user;
+        let password;
+        return { ...user, password };
       }
     },
     { res, req, authGuard: false }
   );
 });
 
+server.use("/users/update/:id", (req, res) => {
+  if (req.method === "PUT") {
+    handleRequest(
+      async () => {
+        const user = users.find((item) => item.id === parseInt(req.params.id, 10));
+
+        if (!user) {
+          throw new Error("Пользователь не найден");
+        }
+
+        const body = req.body;
+
+        if (!body) {
+          throw new Error("Не переданы данные для обновления пользователя");
+        }
+
+        users = users.map((item) => (item.id === user.id ? { ...item, ...body } : item));
+
+        return users;
+      },
+      { res, req }
+    );
+  }
+});
+
+server.use("/users/delete", (req, res) => {
+  if (req.method === "DELETE") {
+    handleRequest(
+      async () => {
+        console.log(req.params);
+        const userIds = req.body;
+        userIds?.forEach((userId) => {
+          const user = users.find((item) => item.id === parseInt(userId, 10));
+
+          if (!user) return;
+
+          users = users.filter((item) => item.id !== user.id);
+        });
+
+        return users;
+      },
+      { res, req }
+    );
+  }
+});
+
 server.get("/users", (req, res) => {
   handleRequest(
     async () => {
-      return getDbData.users().value();
+      return users.map(({ password, ...item }) => item);
     },
     { res, req }
   );
@@ -91,7 +166,6 @@ server.post("/signin", (req, res) => {
     async () => {
       const { email, password } = req.body;
       checkEmptyFields([{ email }, { password }]);
-      const users = getDbData.users().value();
       const user = users.find((user) => user.email === email);
       const isComparePassword = await compare(password, user.password);
       if (!user || !isComparePassword) {
@@ -103,27 +177,27 @@ server.post("/signin", (req, res) => {
   );
 });
 
-server.post("/signup", (req, res) => {
-  handleRequest(
+server.post("/signup", async (req, res) => {
+  await handleRequest(
     async () => {
       const { username, email, password } = req.body;
       checkEmptyFields([{ username }, { email }, { password }]);
-      const users = getDbData.users();
-      const user = users.value().find((user) => user.email === email);
+      const user = users.find((user) => user.email === email);
+      console.log(users);
       if (user) {
         throw new Error("Пользователь с таким email уже зарегистрирован");
       }
-      users
-        .push({
-          id: users.value().length + 1,
-          role: "admin",
-          username,
-          email,
-          password: await hash(password, await genSalt(10)),
-        })
-        .write();
+      const newUser = {
+        id: users.length + 1,
+        role: "admin",
+        username,
+        email,
+      };
 
-      return generateToken({ email });
+      users.push({ ...newUser, password: await hash(password, await genSalt(10)) });
+
+      const response = { ...newUser, ...generateToken({ email }) };
+      return response;
     },
     { res, req, useAuthGuard: false }
   );

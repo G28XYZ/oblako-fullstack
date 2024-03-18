@@ -6,15 +6,16 @@
         {
           "id": 1,
           "role": "admin",
-          "username": "test",
-          "email": "a@a.ru"
+          "username": "testwish1",
+          "email": "a@a.ru",
+          "password": "$2b$10$wiJ4sHQMkkTycZMhZA8QeOKHlgLOxOSttJaaB7iSZwMKECrZ3XCqi"
         },
         {
-          "id": 2,
+          "id": 4,
           "role": "admin",
-          "username": "test",
-          "email": "aa@a.ru",
-          "password": "$2b$10$c3SygO0a6i7wipOKp238ROgyvjC6bQUH6Mv7U2H3aUeseXNUjsSQC"
+          "username": "testwish1",
+          "email": "aa@aa.ru",
+          "password": "$2b$10$kZQpTk5Bh4lqKccTmS0wbO.PsU9.YejzsTY6tnVXajHsm2PgFqeee"
         }
       ]
     }

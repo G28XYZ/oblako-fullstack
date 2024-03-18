@@ -8,6 +8,7 @@ export default defineConfig(({ mode }) => {
       BASE_URL: JSON.stringify(env.MAIN_URL),
       PORT: JSON.stringify(env.PORT),
     },
+
     plugins: [
       react({
         babel: {

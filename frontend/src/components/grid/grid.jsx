@@ -3,20 +3,12 @@ import { useSelector } from "react-redux";
 import { Input, InputGroup, Table, Button, DOMHelper, Progress, Checkbox, Stack, SelectPicker } from "rsuite";
 import SearchIcon from "@rsuite/icons/Search";
 import MoreIcon from "@rsuite/icons/legacy/More";
-import { ActionCell, CheckCell, ImageCell, NameCell } from "./cells";
+import { ActionCell, AdminCell, CheckCell, ImageCell, NameCell } from "./cells";
 import DrawerView from "./draw-view";
+import { useActions } from "../../store";
 
 const { Column, HeaderCell, Cell } = Table;
 const { getHeight } = DOMHelper;
-
-const ratingList = Array.from({ length: 5 }).map((_, index) => {
-  return {
-    value: index + 1,
-    label: Array.from({ length: index + 1 })
-      .map(() => "⭐️")
-      .join(""),
-  };
-});
 
 export const GridTable = () => {
   const [showDrawer, setShowDrawer] = useState(false);
@@ -26,7 +18,13 @@ export const GridTable = () => {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [rating, setRating] = useState(null);
 
+  const [loadingDeleteButton, setLoadingDeleteButton] = useState(false);
+
   const { users: data } = useSelector((state) => state.main);
+
+  const user = useSelector((state) => state.user);
+
+  const { dispatch, actions } = useActions();
 
   let checked = false;
   let indeterminate = false;
@@ -40,7 +38,7 @@ export const GridTable = () => {
   }
 
   const handleCheckAll = (_value, checked) => {
-    const keys = checked ? data.map((item) => item.id) : [];
+    const keys = checked ? data.map((item) => (item.id !== user.userId ? item.id : null)) : [];
     setCheckedKeys(keys);
   };
   const handleCheck = (value, checked) => {
@@ -91,10 +89,6 @@ export const GridTable = () => {
   return (
     <>
       <Stack className="table-toolbar" justifyContent="space-between">
-        {/* <Button appearance="primary" onClick={() => setShowDrawer(true)}>
-          Add Member
-        </Button> */}
-
         <Stack style={{ paddingBottom: 12 }} spacing={8}>
           <InputGroup inside>
             <Input placeholder="Поиск" value={searchKeyword} onChange={setSearchKeyword} />
@@ -102,7 +96,17 @@ export const GridTable = () => {
               <SearchIcon />
             </InputGroup.Addon>
           </InputGroup>
-          <Button appearance="ghost" onClick={() => {}} disabled={!Boolean(checkedKeys.length)}>
+          <Button
+            loading={loadingDeleteButton}
+            appearance="ghost"
+            onClick={async () => {
+              setLoadingDeleteButton(true);
+              await dispatch(actions.main.onDeleteUsers(checkedKeys));
+              setCheckedKeys([]);
+              setLoadingDeleteButton(false);
+            }}
+            disabled={!Boolean(checkedKeys.length)}
+          >
             Удалить выбранных
           </Button>
         </Stack>
@@ -126,35 +130,33 @@ export const GridTable = () => {
               <Checkbox inline checked={checked} indeterminate={indeterminate} onChange={handleCheckAll} />
             </div>
           </HeaderCell>
-          <CheckCell dataKey="id" checkedKeys={checkedKeys} onChange={handleCheck} />
+          <CheckCell dataKey="id" checkedKeys={checkedKeys} onChange={handleCheck} currentUser={user} />
         </Column>
         <Column width={80} align="center">
           <HeaderCell></HeaderCell>
           <ImageCell dataKey="avatar" />
         </Column>
 
-        <Column minWidth={160} flexGrow={1} sortable>
+        <Column width={200} sortable>
           <HeaderCell>Имя</HeaderCell>
           <NameCell dataKey="username" />
         </Column>
 
-        <Column width={230} sortable>
+        <Column width={200} sortable>
+          <HeaderCell>Email</HeaderCell>
+          <Cell dataKey="email" />
+        </Column>
+
+        <Column minWidth={230} flexGrow={1} sortable>
           <HeaderCell>Состояние диска</HeaderCell>
           <Cell style={{ padding: "10px 0" }} dataKey="progress">
             {(rowData) => <Progress percent={rowData.progress} showInfo={false} />}
           </Cell>
         </Column>
 
-        <Column width={300}>
-          <HeaderCell>Email</HeaderCell>
-          <Cell dataKey="email" />
-        </Column>
-
-        <Column width={120}>
-          <HeaderCell>
-            <MoreIcon />
-          </HeaderCell>
-          <ActionCell dataKey="id" />
+        <Column width={100}>
+          <HeaderCell>Роль</HeaderCell>
+          <AdminCell dataKey="role" currentUser={user} />
         </Column>
       </Table>
 

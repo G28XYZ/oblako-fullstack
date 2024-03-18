@@ -21,7 +21,21 @@ export const checkValidForm = (allActions) => (store) => (next) => (action) => {
     }
     const hasEmptyValue = Object.values(dataFields).some((val) => Boolean(val?.toString()) === false);
     const hasErrors = Object.values(errors).join("") !== "" || hasEmptyValue;
-    hasErrors !== state.hasErrors && dispatch(allActions.setHasErrors(hasErrors));
+    hasErrors !== state.hasErrors && dispatch(allActions.user.setHasErrors(hasErrors));
+  }
+
+  return result;
+};
+
+export const clearRequestErrors = (allActions) => (store) => (next) => (action) => {
+  const { dispatch } = store;
+  const result = next(action);
+  const state = store.getState().user;
+
+  if (state.requestErrors?.length) {
+    if (action.type.includes("pending")) {
+      dispatch(allActions.user.clearRequestErrors(true));
+    }
   }
 
   return result;

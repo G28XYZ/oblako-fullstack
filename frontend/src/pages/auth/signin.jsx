@@ -8,9 +8,10 @@ export const SignIn = () => {
     dataFields: { email, password },
     errors,
     hasErrors,
+    requestErrors,
   } = useSelector((state) => state.user);
 
-  const { dispatch, actions } = useActions();
+  const { dispatch, actions } = useActions((actions) => actions.user);
 
   const submit = (
     <Button appearance="primary" disabled={hasErrors} onClick={() => dispatch(actions.onLogin({ email, password }))}>
@@ -19,7 +20,7 @@ export const SignIn = () => {
   );
 
   return (
-    <Panel bordered style={{ width: 400 }} header="Авторизация">
+    <Panel bordered style={{ width: 400, overflow: "visible" }} header="Авторизация">
       <p style={{ marginBottom: 10 }}>
         <span className="text-muted">Не зарегистрированы? </span> <Link to="/signup"> Создать аккаунт</Link>
       </p>
@@ -34,6 +35,7 @@ export const SignIn = () => {
             value={email}
             onChange={(value) => dispatch(actions.setEmail(value))}
             errorMessage={errors.email}
+            errorPlacement="rightEnd"
           />
         </Form.Group>
         <Form.Group>
@@ -46,6 +48,7 @@ export const SignIn = () => {
             type="password"
             value={password}
             onChange={(value) => dispatch(actions.setPassword(value))}
+            errorPlacement="rightEnd"
           />
         </Form.Group>
         <Form.Group>
@@ -62,6 +65,7 @@ export const SignIn = () => {
             submit
           )}
         </Form.Group>
+        {Boolean(requestErrors.length) && <span>{requestErrors.map((item) => item?.message)}</span>}
       </Form>
     </Panel>
   );

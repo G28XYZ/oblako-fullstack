@@ -12,25 +12,26 @@ const slices = {
   mainSlice,
 };
 
-const actions = {
-  ...appSlice.actions,
-  ...userSlice.actions,
-  ...mainSlice.actions,
+const allActions = {
+  app: { ...appSlice.actions },
+  user: { ...userSlice.actions },
+  main: { ...mainSlice.actions },
 };
 
 const rootReducer = combineReducers(
   Object.values(slices).reduce((acc, slice) => ({ ...acc, [slice.name]: slice.reducer }), {})
 );
 
-const middlewares = [checkValidForm(actions), loadingMiddleware(actions)];
+const middlewares = [checkValidForm(allActions), loadingMiddleware(allActions)];
 
 export const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(middlewares),
 });
 
-export const useActions = () => {
+export const useActions = (getActions = (actions = allActions) => actions) => {
   const dispatch = useDispatch();
+  const actions = getActions(allActions);
 
   return { dispatch, actions };
 };

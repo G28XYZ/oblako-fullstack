@@ -10,14 +10,20 @@ class Api {
     register: `${this.#baseUrl}/signup`,
     me: `${this.#baseUrl}/me`,
     users: `${this.#baseUrl}/users`,
+    updateUser: `${this.#baseUrl}/users/update`,
+    deleteUsers: `${this.#baseUrl}/users/delete`,
   };
 
   async #handleRequest(response) {
-    return response.ok ? response.json() : Promise.reject("Error request");
+    return response?.json() || Promise.reject({ message: "Error api.handleRequest", response });
   }
 
   get #headers() {
-    return { authorization: `Bearer ${this.#token}` };
+    let headers = {};
+    if (this.#token) {
+      headers.authorization = `Bearer ${this.#token}`;
+    }
+    return headers;
   }
 
   setToken(token = localStorage.getItem(AUTH_TOKEN_NAME)) {
@@ -45,6 +51,20 @@ class Api {
     }).then(this.#handleRequest);
 
   getUsers = async () => await fetch(this.#urls.users, { headers: this.#headers }).then(this.#handleRequest);
+
+  onUpdateUser = async (userId, data) =>
+    await fetch(`${this.#urls.updateUser}/${userId}`, {
+      method: "PUT",
+      headers: { ...this.#headers, "Content-Type": "application/json;charset=utf-8" },
+      body: JSON.stringify(data),
+    }).then(this.#handleRequest);
+
+  onDeleteUsers = async (userIds = []) =>
+    await fetch(`${this.#urls.deleteUsers}`, {
+      method: "DELETE",
+      headers: { ...this.#headers, "Content-Type": "application/json;charset=utf-8" },
+      body: JSON.stringify(userIds),
+    }).then(this.#handleRequest);
 }
 
 export const api = new Api();
