@@ -2,20 +2,51 @@
   "api": [
     {
       "id": "users",
+      "lastId": 7,
       "data": [
         {
-          "id": 1,
+          "id": 3,
           "role": "admin",
           "username": "testwish1",
-          "email": "a@a.ru",
-          "password": "$2b$10$wiJ4sHQMkkTycZMhZA8QeOKHlgLOxOSttJaaB7iSZwMKECrZ3XCqi"
+          "email": "test@aa.ru",
+          "password": "$2b$10$wkthL2UY.VKyNZ/kdRzt6O.Jwa0WiX0BHHtDKcJT3.xCsVMEDhquS",
+          "storage_size": 100,
+          "files": []
         },
         {
           "id": 4,
           "role": "admin",
           "username": "testwish1",
-          "email": "aa@aa.ru",
-          "password": "$2b$10$kZQpTk5Bh4lqKccTmS0wbO.PsU9.YejzsTY6tnVXajHsm2PgFqeee"
+          "email": "aaa@aaa.ru",
+          "password": "$2b$10$U9ooMmw.cqVsm/WRXr8CFeD.NyAj7Oae/MtwyY8Kcr075cjPpmgvC",
+          "storage_size": 100,
+          "files": []
+        },
+        {
+          "id": 5,
+          "role": "user",
+          "username": "Testname 1",
+          "email": "test@test.ru",
+          "password": "$2b$10$3fAi/bGpVXmme8ySxutsXOsWD7cavXTzFnJmTG2RarrWtBBFHySIS",
+          "storage_size": 100,
+          "files": []
+        },
+        {
+          "id": 7,
+          "role": "admin",
+          "username": "New user",
+          "email": "aaa@test.ru",
+          "storage_size": 100,
+          "files": [
+            {
+              "name": "test file",
+              "size": 2,
+              "comment": "test comment",
+              "createdAt": "2024-03-18T16:40:29.518Z",
+              "downloadedAt": "2024-03-18T16:40:29.518Z"
+            }
+          ],
+          "password": "$2b$10$v76rGcmSQHcT5/5njWj.zu1n5Oejg.ngJh2L/MakiRBt9UMyc9QSa"
         }
       ]
     }

@@ -1,8 +1,22 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { Input, InputGroup, Table, Button, DOMHelper, Progress, Checkbox, Stack, SelectPicker } from "rsuite";
+import {
+  IconButton,
+  Input,
+  InputGroup,
+  Table,
+  Button,
+  DOMHelper,
+  Progress,
+  Checkbox,
+  Stack,
+  SelectPicker,
+  Popover,
+  Whisper,
+} from "rsuite";
 import SearchIcon from "@rsuite/icons/Search";
 import MoreIcon from "@rsuite/icons/legacy/More";
+import ReloadIcon from "@rsuite/icons/Reload";
 import { ActionCell, AdminCell, CheckCell, ImageCell, NameCell } from "./cells";
 import DrawerView from "./draw-view";
 import { useActions } from "../../store";
@@ -17,6 +31,7 @@ export const GridTable = () => {
   const [sortType, setSortType] = useState();
   const [searchKeyword, setSearchKeyword] = useState("");
   const [rating, setRating] = useState(null);
+  const [gridLoading, setGridLoading] = useState(false);
 
   const [loadingDeleteButton, setLoadingDeleteButton] = useState(false);
 
@@ -29,7 +44,7 @@ export const GridTable = () => {
   let checked = false;
   let indeterminate = false;
 
-  if (checkedKeys.length === data.length) {
+  if (checkedKeys.length === data.length - 1) {
     checked = true;
   } else if (checkedKeys.length === 0) {
     checked = false;
@@ -38,7 +53,9 @@ export const GridTable = () => {
   }
 
   const handleCheckAll = (_value, checked) => {
-    const keys = checked ? data.map((item) => (item.id !== user.userId ? item.id : null)) : [];
+    const keys = checked
+      ? data.map((item) => (item.id !== user.data.id ? item.id : null)).filter((e) => e !== null)
+      : [];
     setCheckedKeys(keys);
   };
   const handleCheck = (value, checked) => {
@@ -51,8 +68,8 @@ export const GridTable = () => {
     setSortType(sortType);
   };
 
-  const filteredData = () => {
-    const filtered = data.filter((item) => {
+  const factoryData = () => {
+    let filtered = data.filter((item) => {
       if (!item.username.includes(searchKeyword)) {
         return false;
       }
@@ -65,7 +82,7 @@ export const GridTable = () => {
     });
 
     if (sortColumn && sortType) {
-      return filtered.sort((a, b) => {
+      filtered.sort((a, b) => {
         let x = a[sortColumn];
         let y = b[sortColumn];
 
@@ -83,6 +100,17 @@ export const GridTable = () => {
         }
       });
     }
+
+    const currentUserIndex = filtered.findIndex((item) => item.id === user.data.id);
+
+    if (currentUserIndex > 0) {
+      filtered = [
+        filtered[currentUserIndex],
+        ...filtered.slice(0, currentUserIndex),
+        ...filtered.slice(currentUserIndex + 1),
+      ];
+    }
+
     return filtered;
   };
 
@@ -110,14 +138,29 @@ export const GridTable = () => {
             Удалить выбранных
           </Button>
         </Stack>
+        <Whisper placement="left" speaker={<Popover>Обновить</Popover>}>
+          <IconButton
+            onClick={async () => {
+              setGridLoading(true);
+              await dispatch(actions.main.getUsers());
+              setGridLoading(false);
+            }}
+            color="blue"
+            size="xs"
+            icon={<ReloadIcon />}
+            appearance="ghost"
+            circle
+          />
+        </Whisper>
       </Stack>
 
       <Table
         height={Math.max(getHeight(window) - 200, 400)}
-        data={filteredData()}
+        data={factoryData()}
         sortColumn={sortColumn}
         sortType={sortType}
         onSortColumn={handleSortColumn}
+        loading={gridLoading}
       >
         <Column width={50} align="center" fixed>
           <HeaderCell>Id</HeaderCell>
@@ -130,7 +173,7 @@ export const GridTable = () => {
               <Checkbox inline checked={checked} indeterminate={indeterminate} onChange={handleCheckAll} />
             </div>
           </HeaderCell>
-          <CheckCell dataKey="id" checkedKeys={checkedKeys} onChange={handleCheck} currentUser={user} />
+          <CheckCell dataKey="id" checkedKeys={checkedKeys} onChange={handleCheck} currentUser={user.data} />
         </Column>
         <Column width={80} align="center">
           <HeaderCell></HeaderCell>
@@ -156,7 +199,7 @@ export const GridTable = () => {
 
         <Column width={100}>
           <HeaderCell>Роль</HeaderCell>
-          <AdminCell dataKey="role" currentUser={user} />
+          <AdminCell dataKey="role" currentUser={user.data} />
         </Column>
       </Table>
 

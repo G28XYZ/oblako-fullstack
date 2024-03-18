@@ -9,7 +9,7 @@ const middlewares = jsonServer.defaults();
 
 let isConnected = false;
 
-const getDbData = {
+const dbModel = {
   usersInterval: null,
   users(origin = false) {
     if (origin) {
@@ -17,24 +17,28 @@ const getDbData = {
     }
     return routes.db.get("api").find({ id: "users" }).get("data");
   },
-  init() {
+  startInterval() {
     if (!this.usersInterval) {
       this.usersInterval = setInterval(() => {
         if (!isConnected) {
           const currentUsers = this.users().value();
           if (!lodash.isEqual(currentUsers, users)) {
             console.log("[JSON-SERVER] write users");
-            getDbData.users(true).set("data", users).write();
+            dbModel.users(true).set("data", users).set("lastId", lastUserId).write();
+            clearInterval(this.usersInterval);
+            this.usersInterval = null;
           }
         }
-      }, 1000);
+      }, 500);
     }
+  },
+  commitChanges() {
+    this.startInterval();
   },
 };
 
-getDbData.init();
-
-let users = [...getDbData.users().value()];
+let lastUserId = dbModel.users(true).get("lastId").value();
+let users = [...dbModel.users().value()];
 
 const authGuard = (req) => {
   if (req.headers?.authorization) {
@@ -82,6 +86,7 @@ server.use(jsonServer.bodyParser);
 
 server.use("*", (req, res, next) => {
   isConnected = true;
+  dbModel.commitChanges();
   next();
 });
 
@@ -135,7 +140,6 @@ server.use("/users/delete", (req, res) => {
   if (req.method === "DELETE") {
     handleRequest(
       async () => {
-        console.log(req.params);
         const userIds = req.body;
         userIds?.forEach((userId) => {
           const user = users.find((item) => item.id === parseInt(userId, 10));
@@ -167,8 +171,11 @@ server.post("/signin", (req, res) => {
       const { email, password } = req.body;
       checkEmptyFields([{ email }, { password }]);
       const user = users.find((user) => user.email === email);
+      if (!user) {
+        throw new Error("Некорректно введены email или пароль");
+      }
       const isComparePassword = await compare(password, user.password);
-      if (!user || !isComparePassword) {
+      if (!isComparePassword) {
         throw new Error("Некорректно введены email или пароль");
       }
       return generateToken({ email });
@@ -183,15 +190,16 @@ server.post("/signup", async (req, res) => {
       const { username, email, password } = req.body;
       checkEmptyFields([{ username }, { email }, { password }]);
       const user = users.find((user) => user.email === email);
-      console.log(users);
       if (user) {
         throw new Error("Пользователь с таким email уже зарегистрирован");
       }
       const newUser = {
-        id: users.length + 1,
+        id: ++lastUserId,
         role: "admin",
         username,
         email,
+        storage_size: 100,
+        files: [],
       };
 
       users.push({ ...newUser, password: await hash(password, await genSalt(10)) });

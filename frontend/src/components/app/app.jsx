@@ -13,17 +13,17 @@ import { Loading } from "../loading";
 
 export function App() {
   const location = useLocation();
-  const { dispatch, actions } = useActions();
+  const { dispatch, actions } = useActions((actions) => actions.user);
 
   const { loggedIn } = useSelector((state) => state.user);
 
   useEffect(() => {
-    dispatch(actions.user.clearRequestErrors());
+    dispatch(actions.clearRequestErrors());
   }, [location]);
 
   useEffect(() => {
-    dispatch(actions.user.getMe());
-  }, []);
+    dispatch(actions.getMe());
+  }, [loggedIn]);
 
   return (
     <CustomProvider theme="dark">

@@ -11,11 +11,13 @@ import ArrowRightLineIcon from "@rsuite/icons/ArrowRightLine";
 import GroupIcon from "@rsuite/icons/legacy/Group";
 import AdminIcon from "@rsuite/icons/Admin";
 import SettingHorizontalIcon from "@rsuite/icons/SettingHorizontal";
+import { Storage } from "../storage/storage";
 
 const NavHeader = () => {
   const { dispatch, actions } = useActions();
   const {
-    dataFields: { username },
+    data: { username },
+    isAdmin,
   } = useSelector((state) => state.user);
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
@@ -33,15 +35,19 @@ const NavHeader = () => {
         >
           <img loading="lazy" src={`https://i.pravatar.cc/100`} width="40" />
         </div>
-        <span>{username}</span>
+        <span style={{ fontSize: 14 }}>
+          {isAdmin ? "admin" : "user"} - {username}
+        </span>
       </div>
       <Button
         onClick={() => {
-          dispatch(actions.main.clearUsers());
           dispatch(actions.user.onLogout());
+          dispatch(actions.user.clearUserData());
+          dispatch(actions.main.clearUsers());
         }}
         color="red"
         appearance="ghost"
+        size="xs"
       >
         Выйти
       </Button>
@@ -61,7 +67,7 @@ export const MainPage = () => {
   }, [users]);
 
   const [expanded, setExpanded] = React.useState(true);
-  const [activeKey, setActiveKey] = React.useState(localStorage.getItem("activeKey") || "1");
+  const [activeKey, setActiveKey] = React.useState(!isAdmin ? "1" : localStorage.getItem("activeKey") || "1");
 
   useMemo(() => localStorage.setItem("activeKey", activeKey), [activeKey]);
 
@@ -75,11 +81,11 @@ export const MainPage = () => {
         >
           <Sidenav.Body>
             <Nav activeKey={activeKey} onSelect={setActiveKey}>
-              <Nav.Item eventKey={localStorage.getItem("activeKey") || "1"} icon={<AdminIcon />}>
+              <Nav.Item eventKey={activeKey} icon={<AdminIcon />}>
                 <NavHeader />
               </Nav.Item>
               <Nav.Item eventKey="1" icon={<SettingHorizontalIcon />}>
-                Профиль
+                Хранилище
               </Nav.Item>
               {isAdmin && (
                 <Nav.Item eventKey="2" icon={<GroupIcon />}>
@@ -93,10 +99,9 @@ export const MainPage = () => {
       </Sidebar>
 
       <Container>
-        {/* <Header /> */}
         <Content style={{ padding: 20 }}>
-          {activeKey === "1" && <>Profile</>}
-          {activeKey === "2" && <GridTable />}
+          {activeKey === "1" && <Storage />}
+          {isAdmin && activeKey === "2" && <GridTable />}
         </Content>
       </Container>
     </Container>

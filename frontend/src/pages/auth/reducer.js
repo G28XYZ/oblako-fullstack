@@ -41,15 +41,14 @@ export const userSlice = createSlice({
   name: "user",
   initialState: {
     loggedIn: Boolean(false),
-    userId: 0,
     isAdmin: false,
     requestErrors: [],
+    data: null,
     dataFields: {
       username: String(""),
       password: String(""),
       email: String(""),
     },
-
     errors: {
       username: String(""),
       password: String(""),
@@ -90,20 +89,27 @@ export const userSlice = createSlice({
     onLogout(state) {
       state.loggedIn = false;
       localStorage.removeItem(AUTH_TOKEN_NAME);
+      api.setToken(null);
     },
     clearRequestErrors(state) {
       state.requestErrors = [];
+    },
+    cleardbModel(state) {
+      state.data = null;
+
+      state.errors.username = "";
+      state.errors.email = "";
+      state.errors.password = "";
     },
   },
   extraReducers(builder) {
     builder
       .addCase(getMe.fulfilled, (state, { payload }) => {
         if (payload) {
-          state.dataFields.username = payload.username;
-          state.dataFields.email = payload.email;
-          state.userId = payload.id;
+          state.data = payload;
           state.loggedIn = true;
           state.isAdmin = payload.role === "admin";
+          state.dataFields.password = "";
         }
       })
       .addCase(onRegister.fulfilled, (state, { payload }) => {
@@ -112,11 +118,10 @@ export const userSlice = createSlice({
           api.setToken(token);
           localStorage.setItem(AUTH_TOKEN_NAME, token);
 
-          state.dataFields.username = payload.username;
-          state.dataFields.email = payload.email;
-          state.userId = payload.id;
+          state.data = payload;
           state.loggedIn = true;
           state.isAdmin = payload.role === "admin";
+          state.dataFields.password = "";
         }
       })
       .addCase(onRegister.rejected, (state, { payload }) => {
@@ -130,6 +135,12 @@ export const userSlice = createSlice({
           localStorage.setItem(AUTH_TOKEN_NAME, token);
           api.setToken(token);
           state.loggedIn = true;
+          state.dataFields.password = "";
+        }
+      })
+      .addCase(onLogin.rejected, (state, { payload }) => {
+        if (payload?.length) {
+          state.requestErrors = payload;
         }
       });
   },

@@ -3,10 +3,14 @@ import { Popover, Whisper, Checkbox, Dropdown, IconButton, Table, Toggle } from 
 import MoreIcon from "@rsuite/icons/legacy/More";
 import { useActions } from "../../store";
 import { useSelector } from "react-redux";
+import AdminIcon from "@rsuite/icons/Admin";
 
 const { Cell } = Table;
 
 export const NameCell = ({ rowData, dataKey, ...props }) => {
+  const {
+    data: { id: userId },
+  } = useSelector((state) => state.user);
   const speaker = (
     <Popover title="Description">
       <p>
@@ -26,9 +30,12 @@ export const NameCell = ({ rowData, dataKey, ...props }) => {
 
   return (
     <Cell {...props}>
-      <Whisper placement="top" speaker={speaker}>
-        <a>{dataKey ? rowData[dataKey] : null}</a>
-      </Whisper>
+      <span>{dataKey ? rowData[dataKey] : null}</span>
+      {userId === rowData.id && (
+        <Whisper placement="top" speaker={<Popover>Вы</Popover>}>
+          <AdminIcon color="violet" style={{ marginLeft: 6 }} />
+        </Whisper>
+      )}
     </Cell>
   );
 };
@@ -59,7 +66,7 @@ export const CheckCell = ({ rowData, onChange, checkedKeys, dataKey, currentUser
         inline
         onChange={onChange}
         checked={checkedKeys.some((item) => item === rowData[dataKey])}
-        disabled={currentUser.userId === rowData.id}
+        disabled={currentUser.id === rowData.id}
       />
     </div>
   </Cell>
@@ -100,7 +107,7 @@ export const AdminCell = ({ rowData, dataKey, currentUser, ...props }) => {
     <Cell {...props}>
       <Toggle
         loading={loading}
-        disabled={currentUser.userId === rowData.id}
+        disabled={currentUser.id === rowData.id}
         checked={rowData[dataKey] === "admin"}
         size="md"
         checkedChildren="Admin"
