@@ -67,6 +67,7 @@ export const CheckCell = ({ rowData, onChange, checkedKeys, dataKey, currentUser
         onChange={onChange}
         checked={checkedKeys.some((item) => item === rowData[dataKey])}
         disabled={currentUser.id === rowData.id}
+        onClick={(e) => e.stopPropagation()}
       />
     </div>
   </Cell>
@@ -104,7 +105,7 @@ export const AdminCell = ({ rowData, dataKey, currentUser, ...props }) => {
   const [loading, setLoading] = useState(false);
   const { dispatch, actions } = useActions();
   return (
-    <Cell {...props}>
+    <Cell {...props} onClick={(e) => e.stopPropagation()}>
       <Toggle
         loading={loading}
         disabled={currentUser.id === rowData.id}

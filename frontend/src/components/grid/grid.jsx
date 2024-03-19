@@ -13,6 +13,7 @@ import {
   SelectPicker,
   Popover,
   Whisper,
+  Modal,
 } from "rsuite";
 import SearchIcon from "@rsuite/icons/Search";
 import MoreIcon from "@rsuite/icons/legacy/More";
@@ -20,6 +21,8 @@ import ReloadIcon from "@rsuite/icons/Reload";
 import { ActionCell, AdminCell, CheckCell, ImageCell, NameCell } from "./cells";
 import DrawerView from "./draw-view";
 import { useActions } from "../../store";
+import { Storage } from "../../pages/storage";
+import { RenderEmpty } from "./render-empty";
 
 const { Column, HeaderCell, Cell } = Table;
 const { getHeight } = DOMHelper;
@@ -32,6 +35,7 @@ export const GridTable = () => {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [rating, setRating] = useState(null);
   const [gridLoading, setGridLoading] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState(null);
 
   const [loadingDeleteButton, setLoadingDeleteButton] = useState(false);
 
@@ -161,6 +165,9 @@ export const GridTable = () => {
         sortType={sortType}
         onSortColumn={handleSortColumn}
         loading={gridLoading}
+        onRowClick={(rowData) => setSelectedRecord(rowData)}
+        renderEmpty={() => <RenderEmpty />}
+        renderLoading={() => <RenderEmpty />}
       >
         <Column width={50} align="center" fixed>
           <HeaderCell>Id</HeaderCell>
@@ -190,6 +197,11 @@ export const GridTable = () => {
           <Cell dataKey="email" />
         </Column>
 
+        <Column width={160} sortable>
+          <HeaderCell>Количество файлов</HeaderCell>
+          <Cell>{(rowData) => rowData.files?.length}</Cell>
+        </Column>
+
         <Column minWidth={230} flexGrow={1} sortable>
           <HeaderCell>Состояние диска</HeaderCell>
           <Cell style={{ padding: "10px 0" }} dataKey="progress">
@@ -203,7 +215,16 @@ export const GridTable = () => {
         </Column>
       </Table>
 
-      <DrawerView open={showDrawer} onClose={() => setShowDrawer(false)} />
+      <Modal backdrop="true" open={Boolean(selectedRecord)} onClose={() => setSelectedRecord(null)} size="lg">
+        <Modal.Header>Хранилище - {selectedRecord?.username}</Modal.Header>
+        <Modal.Body>{<Storage currentUser={selectedRecord || undefined} />}</Modal.Body>
+        <Modal.Footer>
+          <Button onClick={() => setSelectedRecord(null)} appearance="subtle">
+            Закрыть
+          </Button>
+        </Modal.Footer>
+      </Modal>
+      {/* <DrawerView open={showDrawer} onClose={() => setShowDrawer(false)} /> */}
     </>
   );
 };

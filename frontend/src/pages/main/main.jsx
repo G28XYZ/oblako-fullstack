@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
-import { Button, Panel, Stack, Container, Content, Sidebar, Nav, Toggle, Sidenav, Navbar } from "rsuite";
+import { Button, Panel, Stack, Container, Content, Sidebar, Nav, Toggle, Sidenav, Navbar, Modal } from "rsuite";
 import { useActions } from "../../store";
 import { GridTable } from "../../components/grid";
 import DashboardIcon from "@rsuite/icons/legacy/Dashboard";
@@ -11,14 +11,23 @@ import ArrowRightLineIcon from "@rsuite/icons/ArrowRightLine";
 import GroupIcon from "@rsuite/icons/legacy/Group";
 import AdminIcon from "@rsuite/icons/Admin";
 import SettingHorizontalIcon from "@rsuite/icons/SettingHorizontal";
+import ExitIcon from "@rsuite/icons/Exit";
 import { Storage } from "../storage/storage";
 
 const NavHeader = () => {
+  const [showConfirmExit, setShowConfirmExit] = useState(false);
   const { dispatch, actions } = useActions();
-  const {
-    data: { username },
-    isAdmin,
-  } = useSelector((state) => state.user);
+  const { data, isAdmin } = useSelector((state) => state.user);
+
+  const handleConfirmExit = async (confirm) => {
+    if (confirm) {
+      dispatch(actions.user.onLogout());
+      dispatch(actions.user.clearUserData());
+      dispatch(actions.main.clearUsers());
+    }
+    setShowConfirmExit(false);
+  };
+
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
@@ -36,21 +45,37 @@ const NavHeader = () => {
           <img loading="lazy" src={`https://i.pravatar.cc/100`} width="40" />
         </div>
         <span style={{ fontSize: 14 }}>
-          {isAdmin ? "admin" : "user"} - {username}
+          {isAdmin ? "admin" : "user"} - {data?.username}
         </span>
       </div>
       <Button
-        onClick={() => {
-          dispatch(actions.user.onLogout());
-          dispatch(actions.user.clearUserData());
-          dispatch(actions.main.clearUsers());
-        }}
+        startIcon={<ExitIcon />}
+        onClick={() => setShowConfirmExit(true)}
         color="red"
         appearance="ghost"
         size="xs"
       >
         Выйти
       </Button>
+      <Modal backdrop="static" role="alertdialog" open={showConfirmExit} size="xs">
+        <Modal.Header>
+          <ExitIcon color="red" />
+        </Modal.Header>
+        <Modal.Body>
+          Все не сохраненные данные будут утеряны.
+          <br />
+          <br />
+          Выйти?
+        </Modal.Body>
+        <Modal.Footer>
+          <Button onClick={() => handleConfirmExit(true)} color="red" appearance="ghost">
+            Выйти
+          </Button>
+          <Button onClick={() => handleConfirmExit(false)} appearance="subtle">
+            Отмена
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };
@@ -85,7 +110,7 @@ export const MainPage = () => {
                 <NavHeader />
               </Nav.Item>
               <Nav.Item eventKey="1" icon={<SettingHorizontalIcon />}>
-                Хранилище
+                Мое хранилище
               </Nav.Item>
               {isAdmin && (
                 <Nav.Item eventKey="2" icon={<GroupIcon />}>

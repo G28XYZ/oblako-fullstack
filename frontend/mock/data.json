@@ -24,7 +24,7 @@
         },
         {
           "id": 5,
-          "role": "user",
+          "role": "admin",
           "username": "Testname 1",
           "email": "test@test.ru",
           "password": "$2b$10$3fAi/bGpVXmme8ySxutsXOsWD7cavXTzFnJmTG2RarrWtBBFHySIS",
@@ -40,8 +40,9 @@
           "files": [
             {
               "name": "test file",
-              "size": 2,
+              "size": 12131,
               "comment": "test comment",
+              "type": "png",
               "createdAt": "2024-03-18T16:40:29.518Z",
               "downloadedAt": "2024-03-18T16:40:29.518Z"
             }

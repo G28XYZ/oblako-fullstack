@@ -94,7 +94,7 @@ export const userSlice = createSlice({
     clearRequestErrors(state) {
       state.requestErrors = [];
     },
-    cleardbModel(state) {
+    clearUserData(state) {
       state.data = null;
 
       state.errors.username = "";

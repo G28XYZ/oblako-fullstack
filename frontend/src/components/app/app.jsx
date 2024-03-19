@@ -15,14 +15,14 @@ export function App() {
   const location = useLocation();
   const { dispatch, actions } = useActions((actions) => actions.user);
 
-  const { loggedIn } = useSelector((state) => state.user);
+  const { loggedIn, data } = useSelector((state) => state.user);
 
   useEffect(() => {
     dispatch(actions.clearRequestErrors());
   }, [location]);
 
   useEffect(() => {
-    dispatch(actions.getMe());
+    !data && dispatch(actions.getMe());
   }, [loggedIn]);
 
   return (

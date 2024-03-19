@@ -3,6 +3,7 @@ import { appSlice } from "../components/app/reducer";
 import { useDispatch } from "react-redux";
 import { userSlice } from "../pages/auth";
 import { mainSlice } from "../pages/main";
+import { storageSlice } from "../pages/storage";
 import { checkValidForm } from "../pages/auth/middleware";
 import { loadingMiddleware } from "../components/app/middleware";
 
@@ -10,12 +11,14 @@ const slices = {
   appSlice,
   userSlice,
   mainSlice,
+  storageSlice,
 };
 
 const allActions = {
   app: { ...appSlice.actions },
   user: { ...userSlice.actions },
   main: { ...mainSlice.actions },
+  storage: { ...storageSlice.actions },
 };
 
 const rootReducer = combineReducers(
