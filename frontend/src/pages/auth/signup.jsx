@@ -2,7 +2,7 @@ import { Form, Button, Panel, Tooltip, Whisper, InputGroup } from "rsuite";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useActions } from "../../store";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AuthHeader } from "./auth-header";
 import { About } from "../../components/about";
 import EyeIcon from "@rsuite/icons/legacy/Eye";

@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import { Popover, Whisper, Checkbox, Dropdown, IconButton, Table, Toggle } from "rsuite";
-import MoreIcon from "@rsuite/icons/legacy/More";
+import { useState } from "react";
+import { Popover, Whisper, Checkbox, Table, Toggle } from "rsuite";
 import { useActions } from "../../store";
 import { useSelector } from "react-redux";
 import AdminIcon from "@rsuite/icons/Admin";
+import { PropTypes } from "prop-types";
 
 const { Cell } = Table;
 
@@ -11,22 +11,6 @@ export const NameCell = ({ rowData, dataKey, ...props }) => {
   const {
     data: { id: userId },
   } = useSelector((state) => state.user);
-  const speaker = (
-    <Popover title="Description">
-      <p>
-        <b>Name:</b> {rowData.name}
-      </p>
-      <p>
-        <b>Gender:</b> {rowData.gender}
-      </p>
-      <p>
-        <b>City:</b> {rowData.city}
-      </p>
-      <p>
-        <b>Street:</b> {rowData.street}
-      </p>
-    </Popover>
-  );
 
   return (
     <Cell {...props}>
@@ -40,7 +24,12 @@ export const NameCell = ({ rowData, dataKey, ...props }) => {
   );
 };
 
-export const ImageCell = ({ rowData, dataKey, ...props }) => (
+NameCell.propTypes = {
+  rowData: PropTypes.object,
+  dataKey: PropTypes.string,
+};
+
+export const ImageCell = ({ rowData, ...props }) => (
   <Cell {...props} style={{ padding: 0 }}>
     <div
       style={{
@@ -53,10 +42,14 @@ export const ImageCell = ({ rowData, dataKey, ...props }) => (
         display: "inline-block",
       }}
     >
-      <img loading="lazy" src={`https://i.pravatar.cc/${rowData.id + 100}`} width="40" />
+      <img loading="lazy" src={`https://i.pravatar.cc/${rowData?.id + 100}`} width="40" />
     </div>
   </Cell>
 );
+
+ImageCell.propTypes = {
+  rowData: PropTypes.object,
+};
 
 export const CheckCell = ({ rowData, onChange, checkedKeys, dataKey, disabledId, ...props }) => (
   <Cell {...props} style={{ padding: 0 }}>
@@ -73,31 +66,12 @@ export const CheckCell = ({ rowData, onChange, checkedKeys, dataKey, disabledId,
   </Cell>
 );
 
-const renderMenu = ({ onClose, left, top, className }, ref) => {
-  const handleSelect = (eventKey) => {
-    onClose();
-  };
-  return (
-    <Popover ref={ref} className={className} style={{ left, top }} full>
-      <Dropdown.Menu onSelect={handleSelect}>
-        <Dropdown.Item eventKey={1}>Follow</Dropdown.Item>
-        <Dropdown.Item eventKey={2}>Sponsor</Dropdown.Item>
-        <Dropdown.Item eventKey={3}>Add to friends</Dropdown.Item>
-        <Dropdown.Item eventKey={4}>View Profile</Dropdown.Item>
-        <Dropdown.Item eventKey={5}>Block</Dropdown.Item>
-      </Dropdown.Menu>
-    </Popover>
-  );
-};
-
-export const ActionCell = (props) => {
-  return (
-    <Cell {...props} className="link-group">
-      <Whisper placement="autoVerticalEnd" trigger="click" speaker={renderMenu}>
-        <IconButton appearance="subtle" icon={<MoreIcon />} />
-      </Whisper>
-    </Cell>
-  );
+CheckCell.propTypes = {
+  rowData: PropTypes.object,
+  onChange: PropTypes.func,
+  checkedKeys: PropTypes.array,
+  dataKey: PropTypes.string,
+  disabledId: PropTypes.any,
 };
 
 export const AdminCell = ({ rowData, dataKey, currentUser, ...props }) => {
@@ -125,4 +99,10 @@ export const AdminCell = ({ rowData, dataKey, currentUser, ...props }) => {
       />
     </Cell>
   );
+};
+
+AdminCell.propTypes = {
+  rowData: PropTypes.object,
+  dataKey: PropTypes.string,
+  currentUser: PropTypes.object,
 };

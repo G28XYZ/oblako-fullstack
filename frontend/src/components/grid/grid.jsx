@@ -10,16 +10,13 @@ import {
   Progress,
   Checkbox,
   Stack,
-  SelectPicker,
   Popover,
   Whisper,
   Modal,
 } from "rsuite";
 import SearchIcon from "@rsuite/icons/Search";
-import MoreIcon from "@rsuite/icons/legacy/More";
 import ReloadIcon from "@rsuite/icons/Reload";
-import { ActionCell, AdminCell, CheckCell, ImageCell, NameCell } from "./cells";
-import DrawerView from "./draw-view";
+import { AdminCell, CheckCell, ImageCell, NameCell } from "./cells";
 import { useActions } from "../../store";
 import { Storage } from "../../pages/storage";
 import { RenderEmpty } from "./render-empty";
@@ -29,12 +26,10 @@ const { Column, HeaderCell, Cell } = Table;
 const { getHeight } = DOMHelper;
 
 export const GridTable = () => {
-  const [showDrawer, setShowDrawer] = useState(false);
   const [checkedKeys, setCheckedKeys] = useState([]);
   const [sortColumn, setSortColumn] = useState(null);
   const [sortType, setSortType] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState("");
-  const [rating, setRating] = useState(null);
   const [gridLoading, setGridLoading] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
 
@@ -77,10 +72,6 @@ export const GridTable = () => {
   const factoryData = () => {
     let filtered = data.filter((item) => {
       if (!item.username.includes(searchKeyword)) {
-        return false;
-      }
-
-      if (rating && item.rating !== rating) {
         return false;
       }
 
@@ -150,7 +141,7 @@ export const GridTable = () => {
               setCheckedKeys([]);
               setLoadingDeleteButton(false);
             }}
-            disabled={!Boolean(checkedKeys.length)}
+            disabled={Boolean(checkedKeys.length) === false}
           >
             Удалить выбранных
           </Button>
@@ -243,7 +234,6 @@ export const GridTable = () => {
           </Button>
         </Modal.Footer>
       </Modal>
-      {/* <DrawerView open={showDrawer} onClose={() => setShowDrawer(false)} /> */}
     </>
   );
 };

@@ -29,7 +29,7 @@ export const mainSlice = createSlice({
   },
   extraReducers(builder) {
     builder
-      .addCase(getUsers.fulfilled, (state, { payload, ...args }) => {
+      .addCase(getUsers.fulfilled, (state, { payload }) => {
         if (payload) {
           state.users = payload;
         }

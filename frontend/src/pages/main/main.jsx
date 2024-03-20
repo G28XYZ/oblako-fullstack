@@ -1,13 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
-import { Button, Panel, Stack, Container, Content, Sidebar, Nav, Toggle, Sidenav, Navbar, Modal } from "rsuite";
+import { Button, Container, Content, Sidebar, Nav, Sidenav, Modal } from "rsuite";
 import { useActions } from "../../store";
 import { GridTable } from "../../components/grid";
-import DashboardIcon from "@rsuite/icons/legacy/Dashboard";
-import MagicIcon from "@rsuite/icons/legacy/Magic";
-import GearCircleIcon from "@rsuite/icons/legacy/GearCircle";
-import ArrowLeftLineIcon from "@rsuite/icons/ArrowLeftLine";
-import ArrowRightLineIcon from "@rsuite/icons/ArrowRightLine";
 import GroupIcon from "@rsuite/icons/legacy/Group";
 import AdminIcon from "@rsuite/icons/Admin";
 import SettingHorizontalIcon from "@rsuite/icons/SettingHorizontal";

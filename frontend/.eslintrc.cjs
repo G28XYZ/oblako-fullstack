@@ -1,9 +1,6 @@
-import globals from "./globals.d";
-
 module.exports = {
   root: true,
   env: { browser: true, es2020: true, node: true, commonjs: true },
-  globals,
   extends: [
     "eslint:recommended",
     "plugin:react/recommended",

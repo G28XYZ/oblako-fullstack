@@ -1,9 +1,7 @@
 import { Steps } from "rsuite";
-import PencilSquareIcon from "@rsuite/icons/legacy/PencilSquare";
-import BookIcon from "@rsuite/icons/legacy/Book";
 import CharacterAuthorizeIcon from "@rsuite/icons/CharacterAuthorize";
 import InfoOutlineIcon from "@rsuite/icons/InfoOutline";
-import { useState } from "react";
+import { PropTypes } from "prop-types";
 
 export const AuthHeader = ({ title, current, setCurrent }) => {
   return (
@@ -20,4 +18,10 @@ export const AuthHeader = ({ title, current, setCurrent }) => {
       />
     </Steps>
   );
+};
+
+AuthHeader.propTypes = {
+  title: PropTypes.string,
+  current: PropTypes.number,
+  setCurrent: PropTypes.func,
 };

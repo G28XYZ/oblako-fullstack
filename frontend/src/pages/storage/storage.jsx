@@ -1,18 +1,13 @@
 import { useSelector } from "react-redux";
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   DOMHelper,
   Table,
   IconButton,
   Popover,
   Whisper,
-  ButtonToolbar,
   Button,
   Modal,
-  Loader,
-  Placeholder,
-  InlineEdit,
-  SelectPicker,
   Input,
   FlexboxGrid,
   Checkbox,
@@ -35,6 +30,7 @@ import { RenderEmpty } from "../../components/grid";
 import { bytesToMegaBytes } from "../../utils";
 import { Loading } from "../../components/loading";
 import { CheckCell } from "../../components/grid/cells";
+import { PropTypes } from "prop-types";
 
 const { Column, HeaderCell, Cell } = Table;
 const { getHeight } = DOMHelper;
@@ -137,7 +133,7 @@ export const Storage = (props) => {
     <>
       <Modal
         backdrop={true}
-        onClose={() => setErrorLoadFile("")}
+        onClose={() => dispatch(actions.storage.setErrorLoadFile(""))}
         role="alertdialog"
         open={Boolean(errorSaveFile)}
         size="xs"
@@ -302,6 +298,10 @@ export const Storage = (props) => {
   );
 };
 
+Storage.propTypes = {
+  currentUser: PropTypes.object,
+};
+
 const ControlRow = ({ label, control, ...rest }) => (
   <FlexboxGrid {...rest} style={{ marginBottom: 10 }} align="middle">
     <FlexboxGrid.Item colspan={10}>{label}: </FlexboxGrid.Item>
@@ -309,14 +309,17 @@ const ControlRow = ({ label, control, ...rest }) => (
   </FlexboxGrid>
 );
 
+ControlRow.propTypes = {
+  label: PropTypes.string,
+  control: PropTypes.any,
+};
+
 const EditModal = ({ handleCloseModal, data, isLoadFile = false }) => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isSavingFile, setIsSavingFile] = useState(false);
   const [isDeletingFile, setIsDeletingFile] = useState(false);
 
   const { dispatch, actions } = useActions();
-
-  const user = useSelector((state) => state.user);
 
   const toaster = useToaster();
   const toast = (type, msg) => <Notification type={type} header={msg} />;
@@ -427,7 +430,7 @@ const EditModal = ({ handleCloseModal, data, isLoadFile = false }) => {
           <RemindIcon style={{ color: "#ffb300", fontSize: 24 }} />
           <br />
           <br />
-          Файл '{data?.name}' будет удален без возможности восстановления.
+          Файл &apos;{data?.name}&apos; будет удален без возможности восстановления.
           <br />
           <br />
           Удалить?
@@ -443,4 +446,10 @@ const EditModal = ({ handleCloseModal, data, isLoadFile = false }) => {
       </Modal>
     </>
   );
+};
+
+EditModal.propTypes = {
+  handleCloseModal: PropTypes.func,
+  data: PropTypes.object,
+  isLoadFile: PropTypes.bool,
 };

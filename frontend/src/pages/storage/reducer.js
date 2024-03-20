@@ -74,8 +74,6 @@ const handleClickLoadFile = createAsyncThunk("storage/handleClickLoadFile", asyn
   input.style.display = "none";
   input.click();
   input.addEventListener("change", async () => {
-    let reader = new FileReader();
-
     const [file] = input.files;
     // TODO
     // if (file && file.size > 27e6) {
@@ -116,21 +114,21 @@ export const storageSlice = createSlice({
   },
   extraReducers(builder) {
     builder
-      .addCase(onSaveFile.fulfilled, (state, { payload }) => {
+      .addCase(onSaveFile.fulfilled, (state) => {
         state.errorSaveFile = "";
       })
-      .addCase(onLoadFile.fulfilled, (state, { payload }) => {
+      .addCase(onLoadFile.fulfilled, (state) => {
         state.file = null;
         state.errorSaveFile = "";
       })
-      .addCase(onDeleteFile.fulfilled, (state, { payload }) => {
+      .addCase(onDeleteFile.fulfilled, (state) => {
         state.file = null;
         state.errorSaveFile = "";
       })
-      .addCase(onDeleteManyFiles.fulfilled, (state, { payload }) => {
+      .addCase(onDeleteManyFiles.fulfilled, (state) => {
         state.errorSaveFile = "";
       })
-      .addCase(onDownloadFile.fulfilled, (state, { payload }) => {
+      .addCase(onDownloadFile.fulfilled, (state) => {
         state.errorSaveFile = "";
       })
       .addCase(onDownloadFile.rejected, (state) => {

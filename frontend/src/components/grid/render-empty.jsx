@@ -15,3 +15,8 @@ export const RenderEmpty = ({ emptyText, loadingText } = {}) => {
     </div>
   );
 };
+
+RenderEmpty.propTypes = {
+  emptyText: "Не данных",
+  loadingText: "Загрузка...",
+};
