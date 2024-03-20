@@ -1,7 +1,7 @@
 import { AUTH_TOKEN_NAME } from "../utils/constants";
 
 class Api {
-  #baseUrl = "BASE_URL" in window ? window.BASE_URL : "";
+  #baseUrl = BASE_URL;
 
   #token = localStorage.getItem(AUTH_TOKEN_NAME);
 

@@ -1,3 +1,5 @@
+import { PropTypes } from "prop-types";
+
 export const RenderEmpty = ({ emptyText, loadingText } = {}) => {
   return (
     <div role="rowgroup" className="rs-table-body-row-wrapper" style={{ top: 40, height: 160 }}>
@@ -17,6 +19,6 @@ export const RenderEmpty = ({ emptyText, loadingText } = {}) => {
 };
 
 RenderEmpty.propTypes = {
-  emptyText: "Не данных",
-  loadingText: "Загрузка...",
+  emptyText: PropTypes.string,
+  loadingText: PropTypes.string,
 };

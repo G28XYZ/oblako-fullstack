@@ -25,26 +25,28 @@ const onRegister = createAsyncThunk("user/register", async (payload, thunkApi) =
   }
 });
 
+const initState = {
+  loggedIn: Boolean(false),
+  isAdmin: false,
+  requestErrors: [],
+  data: null,
+  dataFields: {
+    username: String(""),
+    password: String(""),
+    email: String(""),
+  },
+  errors: {
+    username: String(""),
+    password: String(""),
+    email: String(""),
+  },
+
+  hasErrors: true,
+};
+
 export const userSlice = createSlice({
   name: "user",
-  initialState: {
-    loggedIn: Boolean(false),
-    isAdmin: false,
-    requestErrors: [],
-    data: null,
-    dataFields: {
-      username: String(""),
-      password: String(""),
-      email: String(""),
-    },
-    errors: {
-      username: String(""),
-      password: String(""),
-      email: String(""),
-    },
-
-    hasErrors: true,
-  },
+  initialState: { ...initState },
   reducers: {
     setUsername(state, { payload }) {
       state.dataFields.username = payload;
@@ -83,17 +85,9 @@ export const userSlice = createSlice({
       state.requestErrors = [];
     },
     clearUserData(state) {
-      state.data = null;
-
-      state.dataFields = {
-        username: String(""),
-        password: String(""),
-        email: String(""),
-      };
-
-      state.errors.username = "";
-      state.errors.email = "";
-      state.errors.password = "";
+      Object.keys(state).forEach((key) => {
+        state[key] = initState[key];
+      });
     },
   },
   extraReducers(builder) {
