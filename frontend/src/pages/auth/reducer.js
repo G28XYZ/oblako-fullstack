@@ -85,6 +85,12 @@ export const userSlice = createSlice({
     clearUserData(state) {
       state.data = null;
 
+      state.dataFields = {
+        username: String(""),
+        password: String(""),
+        email: String(""),
+      };
+
       state.errors.username = "";
       state.errors.email = "";
       state.errors.password = "";

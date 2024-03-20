@@ -54,31 +54,33 @@ export const Storage = (props) => {
   const [deletingFiles, setDeletingFiles] = useState(false);
 
   const { dispatch, actions } = useActions();
-  const toaster = useToaster();
 
   const user = useSelector((state) => state.user);
   const { file, errorSaveFile, isEditFile } = useSelector((state) => state.storage);
 
   const { currentUser = user.data } = props;
 
+  const toaster = useToaster();
   const toast = (type, msg) => <Notification type={type} header={msg} />;
 
   const handleSaveFile = async (confirm) => {
     let isSaved = false;
+    let res;
     if (confirm) {
       if (isEditFile) {
-        const res = await dispatch(actions.storage.onSaveFile({ fileData: file, actions }));
+        res = await dispatch(actions.storage.onSaveFile({ fileData: file, actions }));
         isSaved = errorSaveFile === "";
-        return res;
       } else {
-        const res = await dispatch(actions.storage.onLoadFile({ fileData: file, actions }));
+        res = await dispatch(actions.storage.onLoadFile({ fileData: file, actions }));
         isSaved = errorSaveFile === "";
-        return res;
       }
     }
     if (!confirm || isSaved) {
       dispatch(actions.storage.setFile({ file: null }));
+      isSaved && toaster.push(toast("success", isEditFile ? "Сохранено" : "Файл загружен"), { duration: 2000 });
+      errorSaveFile && toaster.push(toast("error", "Ошибка"), { duration: 2000 });
     }
+    return res;
   };
 
   const handleCopyFile = async (rowData) => {
@@ -157,8 +159,8 @@ export const Storage = (props) => {
           </Button>
         </Modal.Footer>
       </Modal>
-      <div style={{ display: "flex", marginBottom: 20, gap: 20, alignItems: "end" }}>
-        <div style={{ width: 80 }}>
+      <div style={{ display: "flex", marginBottom: 20, gap: 15, alignItems: "end" }}>
+        <div style={{ width: 40 }}>
           <Progress.Circle
             percent={parseInt(bytesToMegaBytes(currentUser.files.reduce((sum, e) => sum + e.size, 0)), 10)}
             showInfo
@@ -310,10 +312,14 @@ const ControlRow = ({ label, control, ...rest }) => (
 const EditModal = ({ handleCloseModal, data, isLoadFile = false }) => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isSavingFile, setIsSavingFile] = useState(false);
+  const [isDeletingFile, setIsDeletingFile] = useState(false);
 
   const { dispatch, actions } = useActions();
 
   const user = useSelector((state) => state.user);
+
+  const toaster = useToaster();
+  const toast = (type, msg) => <Notification type={type} header={msg} />;
 
   const handleSave = async (confirm) => {
     setIsSavingFile(true);
@@ -323,7 +329,14 @@ const EditModal = ({ handleCloseModal, data, isLoadFile = false }) => {
 
   const handleConfirmDelete = async (confirm) => {
     if (confirm) {
+      setIsDeletingFile(true);
       const res = await dispatch(actions.storage.onDeleteFile({ fileId: data.id, actions }));
+      if (res?.payload) {
+        toaster.push(toast("success", "Файл удален"), { duration: 2000 });
+      } else {
+        toaster.push(toast("error", "Ошибка"), { duration: 2000 });
+      }
+      setIsDeletingFile(false);
     }
     setConfirmDelete(false);
   };
@@ -420,7 +433,7 @@ const EditModal = ({ handleCloseModal, data, isLoadFile = false }) => {
           Удалить?
         </Modal.Body>
         <Modal.Footer>
-          <Button size="xs" onClick={() => handleConfirmDelete(true)} appearance="primary">
+          <Button loading={isDeletingFile} size="xs" onClick={() => handleConfirmDelete(true)} appearance="primary">
             Удалить
           </Button>
           <Button size="xs" onClick={() => handleConfirmDelete(false)} appearance="subtle">

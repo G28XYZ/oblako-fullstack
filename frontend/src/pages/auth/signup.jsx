@@ -1,13 +1,16 @@
-import { Form, Button, Panel, Tooltip, Whisper } from "rsuite";
+import { Form, Button, Panel, Tooltip, Whisper, InputGroup } from "rsuite";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useActions } from "../../store";
 import { useEffect, useState } from "react";
 import { AuthHeader } from "./auth-header";
 import { About } from "../../components/about";
+import EyeIcon from "@rsuite/icons/legacy/Eye";
+import EyeSlashIcon from "@rsuite/icons/legacy/EyeSlash";
 
 export const SignUp = () => {
   const [current, setCurrent] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     dataFields: { username, password, email },
@@ -56,7 +59,7 @@ export const SignUp = () => {
               value={username}
               onChange={(value) => dispatch(actions.setUsername(value))}
               errorMessage={errors.username}
-              errorPlacement="rightEnd"
+              errorPlacement="leftStart"
             />
           </Form.Group>
           <Form.Group>
@@ -69,22 +72,27 @@ export const SignUp = () => {
               type="email"
               onChange={(value) => dispatch(actions.setEmail(value))}
               errorMessage={errors.email}
-              errorPlacement="rightEnd"
+              errorPlacement="leftStart"
             />
           </Form.Group>
           <Form.Group>
             <Form.ControlLabel>
               <span>Пароль</span>
             </Form.ControlLabel>
-            <Form.Control
-              autoComplete="false"
-              name="password"
-              type="password"
-              value={password}
-              onChange={(value) => dispatch(actions.setPassword(value))}
-              errorMessage={errors.password}
-              errorPlacement="rightEnd"
-            />
+            <InputGroup inside>
+              <Form.Control
+                autoComplete="false"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(value) => dispatch(actions.setPassword(value))}
+                errorMessage={errors.password}
+                errorPlacement="leftStart"
+              />
+              <InputGroup.Addon onClick={() => setShowPassword(!showPassword)} style={{ cursor: "pointer" }}>
+                {showPassword ? <EyeIcon /> : <EyeSlashIcon />}
+              </InputGroup.Addon>
+            </InputGroup>
           </Form.Group>
           <Form.Group>
             {hasErrors ? (

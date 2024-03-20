@@ -1,13 +1,16 @@
-import { Form, Button, Panel, Whisper, Tooltip } from "rsuite";
+import { Form, Button, Panel, Whisper, Tooltip, InputGroup, Input } from "rsuite";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useActions } from "../../store";
 import { AuthHeader } from "./auth-header";
 import { useState } from "react";
 import { About } from "../../components/about";
+import EyeIcon from "@rsuite/icons/legacy/Eye";
+import EyeSlashIcon from "@rsuite/icons/legacy/EyeSlash";
 
 export const SignIn = () => {
   const [current, setCurrent] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     dataFields: { email, password },
@@ -57,18 +60,31 @@ export const SignIn = () => {
               errorPlacement="rightEnd"
             />
           </Form.Group>
+
           <Form.Group>
             <Form.ControlLabel>
               <span>Пароль</span>
             </Form.ControlLabel>
-            <Form.Control
+            <InputGroup inside>
+              <Input
+                type={showPassword ? "text" : "password"}
+                autoComplete="false"
+                name="password"
+                value={password}
+                onChange={(value) => dispatch(actions.setPassword(value))}
+              />
+              <InputGroup.Button onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? <EyeIcon /> : <EyeSlashIcon />}
+              </InputGroup.Button>
+            </InputGroup>
+            {/* <Form.Control
               autoComplete="false"
               name="password"
               type="password"
               value={password}
               onChange={(value) => dispatch(actions.setPassword(value))}
               errorPlacement="rightEnd"
-            />
+            /> */}
           </Form.Group>
           <Form.Group>
             {hasErrors ? (

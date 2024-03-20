@@ -31,8 +31,8 @@ const { getHeight } = DOMHelper;
 export const GridTable = () => {
   const [showDrawer, setShowDrawer] = useState(false);
   const [checkedKeys, setCheckedKeys] = useState([]);
-  const [sortColumn, setSortColumn] = useState();
-  const [sortType, setSortType] = useState();
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortType, setSortType] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [rating, setRating] = useState(null);
   const [gridLoading, setGridLoading] = useState(false);
@@ -91,6 +91,17 @@ export const GridTable = () => {
       filtered.sort((a, b) => {
         let x = a[sortColumn];
         let y = b[sortColumn];
+
+        switch (sortColumn) {
+          case "progress":
+            x = bytesToMegaBytes(a.files.reduce((sum, e) => sum + e.size, 0));
+            y = bytesToMegaBytes(b.files.reduce((sum, e) => sum + e.size, 0));
+            break;
+          case "count":
+            x = a.files?.length;
+            y = b.files?.length;
+            break;
+        }
 
         if (typeof x === "string") {
           x = x.charCodeAt(0);
@@ -202,7 +213,7 @@ export const GridTable = () => {
 
         <Column width={160} sortable>
           <HeaderCell>Количество файлов</HeaderCell>
-          <Cell>{(rowData) => rowData.files?.length}</Cell>
+          <Cell dataKey="count">{(rowData) => rowData.files?.length}</Cell>
         </Column>
 
         <Column minWidth={230} flexGrow={1} sortable>

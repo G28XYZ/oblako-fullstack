@@ -6,7 +6,7 @@
   "scripts": {
     "start": "npm run dev",
     "dev": "vite",
-    "dev:server": "concurrently \"npm run dev\" \"npm run json-server:node\"",
+    "dev:server-watch": "concurrently \"npm run dev\" \"npm run json-server:node-watch\"",
     "build": "vite build",
     "build:prod": "cross-env MAIN_URL=https://oblako-mock-api.ru npm run build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
