@@ -83,7 +83,7 @@ const NavHeader = () => {
 export const MainPage = () => {
   const { users } = useSelector((state) => state.main);
 
-  const { isAdmin } = useSelector((state) => state.user);
+  const { isAdmin, data: userData } = useSelector((state) => state.user);
 
   const { dispatch, actions } = useActions();
 
@@ -125,7 +125,7 @@ export const MainPage = () => {
 
       <Container>
         <Content style={{ padding: 20 }}>
-          {activeKey === "1" && <Storage />}
+          {activeKey === "1" && userData && <Storage />}
           {isAdmin && activeKey === "2" && <GridTable />}
         </Content>
       </Container>

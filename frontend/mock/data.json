@@ -2,34 +2,15 @@
   "api": [
     {
       "id": "users",
-      "lastId": 7,
+      "lastId": 9,
       "data": [
-        {
-          "id": 3,
-          "role": "admin",
-          "username": "testwish1",
-          "email": "test@aa.ru",
-          "password": "$2b$10$wkthL2UY.VKyNZ/kdRzt6O.Jwa0WiX0BHHtDKcJT3.xCsVMEDhquS",
-          "storage_size": 100,
-          "files": []
-        },
-        {
-          "id": 4,
-          "role": "admin",
-          "username": "testwish1",
-          "email": "aaa@aaa.ru",
-          "password": "$2b$10$U9ooMmw.cqVsm/WRXr8CFeD.NyAj7Oae/MtwyY8Kcr075cjPpmgvC",
-          "storage_size": 100,
-          "files": []
-        },
         {
           "id": 5,
           "role": "admin",
           "username": "Testname 1",
           "email": "test@test.ru",
           "password": "$2b$10$3fAi/bGpVXmme8ySxutsXOsWD7cavXTzFnJmTG2RarrWtBBFHySIS",
-          "storage_size": 100,
-          "files": []
+          "storage_size": 100
         },
         {
           "id": 7,
@@ -37,17 +18,89 @@
           "username": "New user",
           "email": "aaa@test.ru",
           "storage_size": 100,
-          "files": [
-            {
-              "name": "test file",
-              "size": 12131,
-              "comment": "test comment",
-              "type": "png",
-              "createdAt": "2024-03-18T16:40:29.518Z",
-              "downloadedAt": "2024-03-18T16:40:29.518Z"
-            }
-          ],
           "password": "$2b$10$v76rGcmSQHcT5/5njWj.zu1n5Oejg.ngJh2L/MakiRBt9UMyc9QSa"
+        },
+        {
+          "id": 8,
+          "role": "admin",
+          "username": "testwish1",
+          "email": "bbb@bbb.ru",
+          "storage_size": 100,
+          "password": "$2b$10$DuEw8gbAAsB3EcRR1.lgjeDrwLt6NtRJNrfucwpEqBCFnuNCYbglC"
+        },
+        {
+          "id": 9,
+          "role": "admin",
+          "username": "Alex",
+          "email": "alex@alex.ru",
+          "storage_size": 100,
+          "password": "$2b$10$GWeaQ8/YSBJP6v1sGbad4e9OpihTvod8.eKwTTC8jv1wYAasH5fsy"
+        }
+      ]
+    },
+    {
+      "id": "files",
+      "lastId": 14,
+      "data": [
+        {
+          "id": 1,
+          "name": "test file",
+          "size": 12131000,
+          "comment": "test comment",
+          "type": "png",
+          "createdAt": "2024-03-18T16:40:29.518Z",
+          "downloadedAt": "2024-03-18T16:40:29.518Z",
+          "ownerId": 7
+        },
+        {
+          "id": 9,
+          "name": "test file",
+          "size": 12131000,
+          "comment": "test comment",
+          "type": "png",
+          "createdAt": "2024-03-20T06:48:47.165Z",
+          "downloadedAt": "2024-03-20T08:27:11.057Z",
+          "ownerId": 5
+        },
+        {
+          "id": 11,
+          "name": "test file",
+          "size": 12131000,
+          "comment": "test comment",
+          "type": "png",
+          "createdAt": "2024-03-20T06:57:54.437Z",
+          "downloadedAt": "2024-03-20T06:57:54.437Z",
+          "ownerId": 7
+        },
+        {
+          "name": "web-dev.png",
+          "size": 195346,
+          "type": "image/png",
+          "comment": "test web-dev.png",
+          "id": 12,
+          "ownerId": 5,
+          "createdAt": "2024-03-20T08:27:30.317Z",
+          "downloadedAt": "2024-03-20T08:27:30.317Z"
+        },
+        {
+          "name": "web-dev.png",
+          "size": 195346,
+          "type": "image/png",
+          "comment": "my file",
+          "id": 13,
+          "ownerId": 9,
+          "createdAt": "2024-03-20T08:33:27.055Z",
+          "downloadedAt": "2024-03-20T08:33:27.055Z"
+        },
+        {
+          "name": "Снимок экрана 2024-02-08 в 21.22.23.png",
+          "size": 1834173,
+          "type": "image/png",
+          "comment": "",
+          "id": 14,
+          "ownerId": 9,
+          "createdAt": "2024-03-20T08:45:22.592Z",
+          "downloadedAt": "2024-03-20T09:01:52.941Z"
         }
       ]
     }

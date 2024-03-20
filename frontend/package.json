@@ -10,6 +10,7 @@
     "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
+    "build:preview": "npm run build && npm run preview",
     "json-server": "json-server -w mock/db.json",
     "json-server:node": "cross-env MAIN_URL=http://localhost:3000 npx nodemon --exec node mock/server.js"
   },

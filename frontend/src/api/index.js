@@ -12,6 +12,11 @@ class Api {
     users: `${this.#baseUrl}/users`,
     updateUser: `${this.#baseUrl}/users/update`,
     deleteUsers: `${this.#baseUrl}/users/delete`,
+    loadFile: `${this.#baseUrl}/files/load`,
+    updateFile: `${this.#baseUrl}/files/update`,
+    deleteFile: `${this.#baseUrl}/files/delete`,
+    downloadFile: `${this.#baseUrl}/files/download`,
+    copyFile: `${this.#baseUrl}/files/copy`,
   };
 
   async #handleRequest(response) {
@@ -36,35 +41,36 @@ class Api {
 
   getMe = async () => await fetch(this.#urls.me, { headers: this.#headers }).then(this.#handleRequest);
 
-  onLogin = async (body) =>
-    await fetch(this.#urls.login, {
-      method: "POST",
-      body: JSON.stringify(body),
-      headers: { ...this.#headers, "Content-Type": "application/json;charset=utf-8" },
-    }).then(this.#handleRequest);
+  #createRequest = async (url, method = "GET", body) => {
+    const headers = this.#headers;
+    body = body ? JSON.stringify(body) : undefined;
+    if (method !== "GET") {
+      headers["Content-Type"] = "application/json;charset=utf-8";
+    }
+    return await fetch(url, { body, method, headers }).then(this.#handleRequest);
+  };
 
-  onRegister = async (body) =>
-    await fetch(this.#urls.register, {
-      method: "POST",
-      body: JSON.stringify(body),
-      headers: { ...this.#headers, "Content-Type": "application/json;charset=utf-8" },
-    }).then(this.#handleRequest);
+  onLogin = async (body) => await this.#createRequest(this.#urls.login, "POST", body);
 
-  getUsers = async () => await fetch(this.#urls.users, { headers: this.#headers }).then(this.#handleRequest);
+  onRegister = async (body) => await this.#createRequest(this.#urls.register, "POST", body);
 
-  onUpdateUser = async (userId, data) =>
-    await fetch(`${this.#urls.updateUser}/${userId}`, {
-      method: "PUT",
-      headers: { ...this.#headers, "Content-Type": "application/json;charset=utf-8" },
-      body: JSON.stringify(data),
-    }).then(this.#handleRequest);
+  getUsers = async () => await this.#createRequest(this.#urls.users);
 
-  onDeleteUsers = async (userIds = []) =>
-    await fetch(`${this.#urls.deleteUsers}`, {
-      method: "DELETE",
-      headers: { ...this.#headers, "Content-Type": "application/json;charset=utf-8" },
-      body: JSON.stringify(userIds),
-    }).then(this.#handleRequest);
+  onUpdateUser = async (userId, body) => await this.#createRequest(`${this.#urls.updateUser}/${userId}`, "PUT", body);
+
+  onDeleteUsers = async (userIds = []) => await this.#createRequest(`${this.#urls.deleteUsers}`, "DELETE", userIds);
+
+  onLoadFile = async (fileData) => await this.#createRequest(`${this.#urls.loadFile}`, "POST", fileData);
+
+  onUpdateFile = async (fileData) => await this.#createRequest(`${this.#urls.updateFile}`, "PUT", fileData);
+
+  onDeleteFile = async (fileId) => await this.#createRequest(`${this.#urls.deleteFile}/${fileId}`, "DELETE");
+
+  onDeleteManyFiles = async (fileIds) => await this.#createRequest(`${this.#urls.deleteFile}`, "DELETE", fileIds);
+
+  onDownloadFile = async (fileId) => await this.#createRequest(`${this.#urls.downloadFile}/${fileId}`);
+
+  onCopyFile = async (fileId) => await this.#createRequest(`${this.#urls.copyFile}/${fileId}`);
 }
 
 export const api = new Api();

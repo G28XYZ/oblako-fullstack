@@ -58,7 +58,7 @@ export const ImageCell = ({ rowData, dataKey, ...props }) => (
   </Cell>
 );
 
-export const CheckCell = ({ rowData, onChange, checkedKeys, dataKey, currentUser, ...props }) => (
+export const CheckCell = ({ rowData, onChange, checkedKeys, dataKey, disabledId, ...props }) => (
   <Cell {...props} style={{ padding: 0 }}>
     <div style={{ lineHeight: "46px" }}>
       <Checkbox
@@ -66,7 +66,7 @@ export const CheckCell = ({ rowData, onChange, checkedKeys, dataKey, currentUser
         inline
         onChange={onChange}
         checked={checkedKeys.some((item) => item === rowData[dataKey])}
-        disabled={currentUser.id === rowData.id}
+        disabled={disabledId === rowData.id}
         onClick={(e) => e.stopPropagation()}
       />
     </div>
@@ -76,7 +76,6 @@ export const CheckCell = ({ rowData, onChange, checkedKeys, dataKey, currentUser
 const renderMenu = ({ onClose, left, top, className }, ref) => {
   const handleSelect = (eventKey) => {
     onClose();
-    console.log(eventKey);
   };
   return (
     <Popover ref={ref} className={className} style={{ left, top }} full>

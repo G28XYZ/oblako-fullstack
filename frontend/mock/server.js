@@ -10,23 +10,44 @@ const middlewares = jsonServer.defaults();
 let isConnected = false;
 
 const dbModel = {
-  usersInterval: null,
+  interval: null,
   users(origin = false) {
     if (origin) {
       return routes.db.get("api").find({ id: "users" });
     }
     return routes.db.get("api").find({ id: "users" }).get("data");
   },
+  files(origin = false) {
+    if (origin) {
+      return routes.db.get("api").find({ id: "files" });
+    }
+    return routes.db.get("api").find({ id: "files" }).get("data");
+  },
+  forceUpdate: [],
   startInterval() {
-    if (!this.usersInterval) {
-      this.usersInterval = setInterval(() => {
+    if (!this.interval) {
+      this.interval = setInterval(() => {
         if (!isConnected) {
           const currentUsers = this.users().value();
-          if (!lodash.isEqual(currentUsers, users)) {
+          const currentFiles = this.files().value();
+
+          const hasChanges =
+            this.forceUpdate.length || !lodash.isEqual(currentUsers, users) || !lodash.isEqual(currentFiles, files);
+
+          if (this.forceUpdate.includes("users") || !lodash.isEqual(currentUsers, users)) {
             console.log("[JSON-SERVER] write users");
             dbModel.users(true).set("data", users).set("lastId", lastUserId).write();
-            clearInterval(this.usersInterval);
-            this.usersInterval = null;
+            this.forceUpdate = this.forceUpdate.filter((item) => item !== "users");
+          }
+          if (this.forceUpdate.includes("files") || !lodash.isEqual(currentFiles, files)) {
+            console.log("[JSON-SERVER] write files");
+            dbModel.files(true).set("data", files).set("lastId", lastFileId).write();
+            this.forceUpdate = this.forceUpdate.filter((item) => item !== "files");
+          }
+          if (!hasChanges) {
+            clearInterval(this.interval);
+            this.interval = null;
+            this.forceUpdate = [];
           }
         }
       }, 500);
@@ -38,7 +59,9 @@ const dbModel = {
 };
 
 let lastUserId = dbModel.users(true).get("lastId").value();
+let lastFileId = dbModel.files(true).get("lastId").value();
 let users = [...dbModel.users().value()];
+let files = [...dbModel.files().value()];
 
 const authGuard = (req) => {
   if (req.headers?.authorization) {
@@ -49,6 +72,10 @@ const authGuard = (req) => {
     return token;
   }
 };
+
+const getUserFiles = (userId) => files.filter((item) => item.ownerId === userId);
+
+const userResponse = ({ password, ...user }) => ({ ...user, files: getUserFiles(user.id) });
 
 const handleRequest = async (fn, { res, req, useAuthGuard = true }) => {
   try {
@@ -80,6 +107,21 @@ const generateToken = (data) => {
   };
 };
 
+const getUserByToken = (req, errMsg) => {
+  const token = authGuard(req);
+  if (Boolean(token)) {
+    const email = jwt.verify(token, "jwt_secret")?.data?.email;
+    if (!email) {
+      throw new Error(errMsg || "Не авторизован");
+    }
+    const user = users.find((user) => user.email === email);
+    if (!user) {
+      throw new Error(errMsg || "Не авторизован");
+    }
+    return user;
+  }
+};
+
 server.use(middlewares);
 
 server.use(jsonServer.bodyParser);
@@ -93,19 +135,9 @@ server.use("*", (req, res, next) => {
 server.get("/me", (req, res) => {
   handleRequest(
     async () => {
-      const token = authGuard(req);
-      if (Boolean(token)) {
-        const email = jwt.verify(token, "jwt_secret")?.data?.email;
-        if (!email) {
-          throw new Error("Не авторизован");
-        }
-        const user = users.find((user) => user.email === email);
-        if (!user) {
-          throw new Error("Не авторизован");
-        }
-        let password;
-        return { ...user, password };
-      }
+      const user = getUserByToken(req);
+      let password;
+      return { ...userResponse(user), password };
     },
     { res, req, authGuard: false }
   );
@@ -129,7 +161,7 @@ server.use("/users/update/:id", (req, res) => {
 
         users = users.map((item) => (item.id === user.id ? { ...item, ...body } : item));
 
-        return users;
+        return users.map(userResponse);
       },
       { res, req }
     );
@@ -141,15 +173,10 @@ server.use("/users/delete", (req, res) => {
     handleRequest(
       async () => {
         const userIds = req.body;
-        userIds?.forEach((userId) => {
-          const user = users.find((item) => item.id === parseInt(userId, 10));
 
-          if (!user) return;
+        users = users.filter((item) => !userIds.includes(item.id));
 
-          users = users.filter((item) => item.id !== user.id);
-        });
-
-        return users;
+        return users.map(userResponse);
       },
       { res, req }
     );
@@ -159,7 +186,7 @@ server.use("/users/delete", (req, res) => {
 server.get("/users", (req, res) => {
   handleRequest(
     async () => {
-      return users.map(({ password, ...item }) => item);
+      return users.map(({ password, ...item }) => userResponse(item));
     },
     { res, req }
   );
@@ -199,15 +226,130 @@ server.post("/signup", async (req, res) => {
         username,
         email,
         storage_size: 100,
-        files: [],
       };
 
       users.push({ ...newUser, password: await hash(password, await genSalt(10)) });
 
-      const response = { ...newUser, ...generateToken({ email }) };
+      const response = { ...userResponse(newUser), ...generateToken({ email }) };
       return response;
     },
     { res, req, useAuthGuard: false }
+  );
+});
+
+server.post("/files/load", async (req, res) => {
+  await handleRequest(
+    async () => {
+      const fileData = req.body;
+      if (!fileData) {
+        throw new Error("Ошибка в данных файла");
+      }
+      const user = getUserByToken(req, "Пользователь не найден");
+      const file = {
+        ...fileData,
+        id: ++lastFileId,
+        ownerId: parseInt(user.id, 10),
+        createdAt: new Date().toISOString(),
+        downloadedAt: new Date().toISOString(),
+      };
+      files.push(file);
+      return file;
+    },
+    { res, req }
+  );
+});
+
+server.use("/files/update", async (req, res) => {
+  if (req.method === "PUT") {
+    await handleRequest(
+      async () => {
+        const fileData = req.body;
+        if (!fileData) {
+          throw new Error("Ошибка в данных файла");
+        }
+        files = files.map((item) => (item.id === fileData.id ? { ...item, ...fileData } : item));
+        return fileData;
+      },
+      { res, req }
+    );
+  }
+});
+
+server.get("/files/copy/:fileId", async (req, res) => {
+  await handleRequest(
+    async () => {
+      const { fileId } = req.params;
+
+      const fileData = files.find((item) => item.id === parseInt(fileId, 10));
+
+      if (!fileData) {
+        throw new Error("Ошибка в данных файла");
+      }
+
+      const user = getUserByToken(req, "Пользователь не найден");
+
+      const file = {
+        ...fileData,
+        id: ++lastFileId,
+        ownerId: parseInt(user.id, 10),
+        createdAt: new Date().toISOString(),
+        downloadedAt: new Date().toISOString(),
+      };
+      files.push(file);
+      return file;
+    },
+    { res, req }
+  );
+});
+
+server.use("/files/delete/:fileId", async (req, res) => {
+  if (req.method === "DELETE") {
+    await handleRequest(
+      async () => {
+        const { fileId } = req.params;
+
+        const fileData = files.find((item) => item.id === parseInt(fileId, 10));
+
+        if (!fileData) {
+          throw new Error("Ошибка в данных файла");
+        }
+
+        files = files.filter((item) => item.id !== parseInt(fileId, 10));
+
+        return fileData;
+      },
+      { res, req }
+    );
+  }
+});
+
+server.use("/files/delete", async (req, res) => {
+  if (req.method === "DELETE") {
+    await handleRequest(
+      async () => {
+        const fileIds = req.body;
+        files = files.filter((item) => !fileIds.includes(item.id));
+        return files;
+      },
+      { res, req }
+    );
+  }
+});
+
+server.get("/files/download/:fileId", async (req, res) => {
+  await handleRequest(
+    async () => {
+      const { fileId } = req.params;
+      const file = files.find((item) => item.id === parseInt(fileId, 10));
+      if (!file) {
+        throw new Error("Файл не найден");
+      }
+      file.downloadedAt = new Date().toISOString();
+      files = files.map((item) => (file.id === item.id ? file : item));
+      dbModel.forceUpdate = ["files"];
+      return file;
+    },
+    { res, req }
   );
 });
 

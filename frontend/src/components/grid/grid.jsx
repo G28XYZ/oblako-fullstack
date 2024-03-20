@@ -23,6 +23,7 @@ import DrawerView from "./draw-view";
 import { useActions } from "../../store";
 import { Storage } from "../../pages/storage";
 import { RenderEmpty } from "./render-empty";
+import { bytesToMegaBytes } from "../../utils";
 
 const { Column, HeaderCell, Cell } = Table;
 const { getHeight } = DOMHelper;
@@ -48,20 +49,21 @@ export const GridTable = () => {
   let checked = false;
   let indeterminate = false;
 
-  if (checkedKeys.length === data.length - 1) {
+  if (checkedKeys.length && checkedKeys.length === data?.length - 1) {
     checked = true;
   } else if (checkedKeys.length === 0) {
     checked = false;
-  } else if (checkedKeys.length > 0 && checkedKeys.length < data.length) {
+  } else if (checkedKeys.length > 0 && checkedKeys.length < data?.length) {
     indeterminate = true;
   }
 
   const handleCheckAll = (_value, checked) => {
     const keys = checked
-      ? data.map((item) => (item.id !== user.data.id ? item.id : null)).filter((e) => e !== null)
+      ? data.map((item) => (item.id !== user.data?.id ? item.id : null)).filter((e) => e !== null)
       : [];
     setCheckedKeys(keys);
   };
+
   const handleCheck = (value, checked) => {
     const keys = checked ? [...checkedKeys, value] : checkedKeys.filter((item) => item !== value);
     setCheckedKeys(keys);
@@ -105,7 +107,7 @@ export const GridTable = () => {
       });
     }
 
-    const currentUserIndex = filtered.findIndex((item) => item.id === user.data.id);
+    const currentUserIndex = filtered.findIndex((item) => item.id === user.data?.id);
 
     if (currentUserIndex > 0) {
       filtered = [
@@ -180,8 +182,9 @@ export const GridTable = () => {
               <Checkbox inline checked={checked} indeterminate={indeterminate} onChange={handleCheckAll} />
             </div>
           </HeaderCell>
-          <CheckCell dataKey="id" checkedKeys={checkedKeys} onChange={handleCheck} currentUser={user.data} />
+          <CheckCell dataKey="id" checkedKeys={checkedKeys} onChange={handleCheck} disabledId={user.data.id} />
         </Column>
+
         <Column width={80} align="center">
           <HeaderCell></HeaderCell>
           <ImageCell dataKey="avatar" />
@@ -205,7 +208,12 @@ export const GridTable = () => {
         <Column minWidth={230} flexGrow={1} sortable>
           <HeaderCell>Состояние диска</HeaderCell>
           <Cell style={{ padding: "10px 0" }} dataKey="progress">
-            {(rowData) => <Progress percent={rowData.progress} showInfo={false} />}
+            {(rowData) => (
+              <Progress
+                percent={parseInt(bytesToMegaBytes(rowData.files.reduce((sum, e) => sum + e.size, 0)), 10)}
+                showInfo
+              />
+            )}
           </Cell>
         </Column>
 

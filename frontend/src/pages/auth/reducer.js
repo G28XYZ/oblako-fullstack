@@ -2,37 +2,25 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { api } from "../../api";
 import { isEmail, latinValue, maxLength, minLength, required, specSymbol, validator } from "../../utils/validator";
 import { AUTH_TOKEN_NAME } from "../../utils/constants";
+import { handleResponse } from "../../utils";
 
-const handleResponse = async (fn, { rejectWithValue }) => {
-  let response;
-  try {
-    response = await fn();
-    if ("errors" in response) {
-      throw new Error(JSON.stringify(response?.errors));
-    }
-    return response;
-  } catch (e) {
-    return rejectWithValue(response?.errors || e);
-  }
-};
-
-const getMe = createAsyncThunk("user/me", async (_, thinkApi) => {
+const getMe = createAsyncThunk("user/me", async (_, thunkApi) => {
   if (api.getToken()) {
-    const response = await handleResponse(api.getMe.bind(this), thinkApi);
+    const response = await handleResponse(api.getMe.bind(this), thunkApi);
     return response?.data || response;
   }
 });
 
-const onLogin = createAsyncThunk("user/login", async (payload, thinkApi) => {
+const onLogin = createAsyncThunk("user/login", async (payload, thunkApi) => {
   if (payload) {
-    const response = await handleResponse(api.onLogin.bind(this, payload), thinkApi);
+    const response = await handleResponse(api.onLogin.bind(this, payload), thunkApi);
     return response?.data || response;
   }
 });
 
-const onRegister = createAsyncThunk("user/register", async (payload, thinkApi) => {
+const onRegister = createAsyncThunk("user/register", async (payload, thunkApi) => {
   if (payload) {
-    const response = await handleResponse(api.onRegister.bind(this, payload), thinkApi);
+    const response = await handleResponse(api.onRegister.bind(this, payload), thunkApi);
     return response?.data || response;
   }
 });
