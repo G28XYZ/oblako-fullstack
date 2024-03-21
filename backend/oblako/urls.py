@@ -1,5 +1,5 @@
 """
-URL configuration for src project.
+URL configuration for oblako project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.0/topics/http/urls/
@@ -14,10 +14,12 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
 from django.urls import path, include
 
+from users.views import RegisterUserView
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('project.urls')),
+    path('users', include('users.urls')),
+    path('files', include('files.urls')),
+    path('signup', RegisterUserView.as_view())
 ]

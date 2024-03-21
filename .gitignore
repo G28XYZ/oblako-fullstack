@@ -29,3 +29,4 @@ include
 lib
 pyvenv.cfg
 __pycache__
+venv
