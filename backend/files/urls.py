@@ -11,9 +11,11 @@
 
 from django.urls import path
 
-from .views import FileView
+from .views import FileView, FileAPIView, FileDeleteAPIView
 
 # /files/
 urlpatterns = [
-    path('', FileView.as_view()),
+    path('', FileAPIView.as_view()),
+    path('delete/', FileDeleteAPIView.as_view()),
+    path('delete/<int:pk>/', FileDeleteAPIView.as_view())
 ]

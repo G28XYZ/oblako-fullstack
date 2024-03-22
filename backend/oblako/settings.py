@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 import datetime
 from pathlib import Path
 import os
+from django.core.files.storage import FileSystemStorage
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,6 +30,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+FILE_SYSTEM = FileSystemStorage(location='files/storage')
 
 # Application definition
 

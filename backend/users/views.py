@@ -1,6 +1,6 @@
-from django.http import JsonResponse
+import json
 from django.db.models import Sum, Count
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
@@ -8,31 +8,75 @@ from rest_framework.decorators import api_view
 
 from .models import User
 from utils.constants import create_response_data
+from utils.mixins import StaffEditorPermissionMixin
+from .serializers import UserSerializer
+
+# TODO -рефакторинг методов, убрать try
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_users(request):
-    result = User.objects.annotate(size=Sum('filemodel__size'), count=Count('filemodel__id')).values(
-        'id', 'username', 'email', 'count', 'size')
+@permission_classes([IsAuthenticated, IsAdminUser])
+def get_users(_):
+    result = User.objects.annotate(
+        size=Sum('filemodel__size'), count=Count('filemodel__id')
+        ).values('id', 'username', 'email', 'count', 'size')
 
     if result:
         return Response(create_response_data(result), status=status.HTTP_200_OK)
 
     return Response(status=status.HTTP_404_NOT_FOUND)
 
-
-@api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
-def delete_user(request, user_id):
-    user = User.objects.get(id=user_id)
-
-    if user:
-        user.delete()
-
-        return JsonResponse({
-            "message": "success",
-        })
+class UserUpdateAPIView(StaffEditorPermissionMixin, generics.UpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    # lookup_field = 'pk' # default
     
-    return JsonResponse({
-        "message": 'User not found',
-    }, status=404)
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        serializer.save(is_superuser=instance.role == 'admin')
+
+class UserDeleteAPIView(StaffEditorPermissionMixin, generics.DestroyAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+    def delete(self, request, *args, **kwargs):
+        user_ids = request.data
+        pk = kwargs.get('pk', None)
+        response = Response()
+        if user_ids:
+            count, _ = self.queryset.filter(id__in=user_ids).delete()
+            if count:
+                response.data = create_response_data({ 'message': 'Выбранные пользователи удалены' })
+                response.status_code = status.HTTP_204_NO_CONTENT
+            else:
+                response.data = create_response_data({ 'message': 'Выбранных пользователей не существует' }, 'error')
+                response.status_code = status.HTTP_404_NOT_FOUND
+        elif pk:
+            response = super().delete(self, request, args, kwargs)
+            if response:
+                response.data = create_response_data({ "message": "Пользователь удален" })
+        else:
+            response.data = create_response_data({ 'message': 'Переданы не корректные данные' }, 'error')
+            response.status_code = status.HTTP_400_BAD_REQUEST
+
+        return response
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_me(request):
+    try:
+        user = User.objects.filter(
+                id=request.user.id
+            ).annotate(
+                size=Sum('filemodel__size'),
+                count=Count('filemodel__id'),
+            ).values('id', 'username', 'email', 'count', 'size')
+        
+        
+        return Response(create_response_data(user))
+    except:
+        pass
+    return Response(
+        create_response_data(type='error', data={"message": 'Пользователь не найден'}),
+        status=status.HTTP_404_NOT_FOUND
+    )

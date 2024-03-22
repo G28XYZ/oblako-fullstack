@@ -1,29 +1,9 @@
-from django.core.files import File
+from django.core.files import File as FileCore
 from rest_framework import serializers
 
+from utils.constants import generate_storage_file_name
 from users.models import User
-from .models import FileModel, file_system
-
-import string
-import random
-
-def get_random_string(l):
-    letters = string.ascii_lowercase
-    random_string = ''.join(random.choice(letters) for i in range(l))
-    
-    return random_string
-
-def generate_download_id(l):
-    return get_random_string(l)
-
-def get_ext(file_name):
-    return file_name.split('.')[-1]
-
-def generate_storage_file_name(file_name):
-    ext = f".{get_ext(file_name)}"
-    result = file_system.get_alternative_name('storage', ext)
-    return result
-
+from .models import File
 
 def patch_validator(data):
 
@@ -46,33 +26,39 @@ def patch_validator(data):
 
 class FileSerializer(serializers.ModelSerializer):
 
-    file = serializers.FileField(allow_empty_file=True, required=False)
+    file = serializers.FileField(write_only=True, allow_empty_file=True, required=False)
+    comment = serializers.CharField(allow_blank=True, allow_null=True, required=False)
 
     class Meta:
-        model = FileModel
-        fields = ['file', 'comment']
+        model = File
+        fields = ['id', 'owner', 'name', 'origin_name', 'custom_name', 'size', 'comment', 'file']
+        extra_kwargs = { "id": {"read_only": True}, "owner": {"read_only": True} }
+        
 
     def create(self, **kwargs):
 
-        file = File(self.validated_data['file'])
-
+        file = FileCore(self.validated_data['file'])
+        
         origin_name = file.name
-
-        file.name = generate_storage_file_name(file.name)
-
+        storage_name = generate_storage_file_name(file.name)
+        file.name = storage_name
+        
         user = User.objects.filter(id=kwargs['user_id']).first()
-
+        comment = ''
+        if 'comment' in file:
+            comment = self.validated_data['comment']
         data = {
             'owner': user,
-            'name': file.name,
+            'name': storage_name,
             'origin_name': origin_name,
+            'custom_name': self.validated_data['custom_name'] or origin_name,
             'size': file.size,
-            'comment': self.validated_data['comment'],
+            'comment': comment,
             'file': file,
         }
         
         try:
-            file_model = FileModel.objects.create(**data)
+            file_model = File.objects.create(**data)
 
             return file_model
 
@@ -89,9 +75,9 @@ class FileSerializer(serializers.ModelSerializer):
         validated_data = patch_validator(self.initial_data)
 
         if kwargs['user'].is_staff:
-            file = FileModel.objects.filter(id=validated_data['id']).first()
+            file = File.objects.filter(id=validated_data['id']).first()
         else:
-            file = FileModel.objects.filter(user_id=kwargs['user'].id).filter(id=validated_data['id']).first()
+            file = File.objects.filter(user_id=kwargs['user'].id).filter(id=validated_data['id']).first()
 
         if file:
             file.origin_name = validated_data['origin_name']
