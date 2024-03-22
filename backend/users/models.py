@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import BaseUserManager, AbstractUser, PermissionsMixin
+from django.core.validators import EmailValidator
+
+from utils.constants import error_messages
 
 class UserManager(BaseUserManager):
     def _create_user(self, email, username, password, **extra_fields):
@@ -26,17 +29,26 @@ class UserManager(BaseUserManager):
 
     def create_superuser(self, email, username, password):
         return self._create_user(email, username, password, role='admin')
-
 class User(AbstractUser, PermissionsMixin):
     id = models.AutoField(primary_key=True, unique=True)
-    username = models.CharField(db_index=True, max_length=50, unique=True)
-    email = models.EmailField(max_length=100, unique=True)
+    username = models.CharField(
+        db_index=True,
+        max_length=50,
+        unique=True,
+        error_messages={ 'unique': error_messages['unique_user']('username') }
+    )
+    email = models.EmailField(
+        max_length=100,
+        unique=True,
+        error_messages={ 'unique': error_messages['unique_user']('email') },
+        validators=[EmailValidator(message="Введите корректный email")]
+    )
     role = models.CharField(max_length=5, default='admin')
     
-    objects = UserManager()
+    # objects = UserManager()
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
 
-    def __str__(self):
-        return self.email
+    # def __str__(self):
+    #     return self.email

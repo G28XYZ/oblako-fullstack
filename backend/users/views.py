@@ -6,10 +6,11 @@ from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.decorators import api_view
+from rest_framework.authtoken.models import Token
 
 from .models import User
 from .serializers import RegisterUserSerializer
-
+from utils.constants import create_response_data
 
 class RegisterUserView(CreateAPIView):
     queryset = User.objects.all()
@@ -19,31 +20,42 @@ class RegisterUserView(CreateAPIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer = RegisterUserSerializer(data = request.data)
+        serializer = self.get_serializer(data = request.data)
 
-        data = {}
+        for user in User.objects.all():
+            if not user:
+                break
+            else:
+                try:
+                    Token.objects.get(user_id=user.id)
+                except Token.DoesNotExist:
+                    Token.objects.create(user=user)
 
         if serializer.is_valid():
-            serializer.save()
-
-            data['response'] = True
-
-            return Response(data, status=status.HTTP_200_OK)
+            user = serializer.save()
+            token = Token.objects.create(user=user)
+            print(serializer.data, token.key)
+            
+            return Response(
+                create_response_data(data={'user': serializer.data, 'access_token':token.key}),
+                status=status.HTTP_201_CREATED
+            )
         
-        else:
-            data = serializer.errors
+        data = []
+        for error in serializer.errors:
+            data.append({ "message": '\n'.join(serializer.errors[error]) })
 
-            return Response(data, status=status.HTTP_400_BAD_REQUEST)
+        return Response(create_response_data(data, type='error'), status=status.HTTP_203_NON_AUTHORITATIVE_INFORMATION)
 
 
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+# @permission_classes([IsAdminUser])
 def get_users(request):
     result = User.objects.annotate(size=Sum('filemodel__size'), count=Count('filemodel__id')).values(
         'id', 'username', 'email', 'count', 'size')
 
     if result:
-        return Response(result, status=status.HTTP_200_OK)
+        return Response(create_response_data(result), status=status.HTTP_200_OK)
 
     return Response(status=status.HTTP_404_NOT_FOUND)
 

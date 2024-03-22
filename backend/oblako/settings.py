@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     
     'users',
     'files',
+    'utils'
 ]
 
 MIDDLEWARE = [
@@ -86,6 +87,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
     ),
+    "EXCEPTION_HANDLER": ("utils.handlers.handle_exceptions")
 }
 
 # Database
@@ -112,6 +114,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 6,
+        }
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
@@ -156,7 +161,7 @@ CORS_ALLOW_METHODS = [
 ]
 
 SIMPLE_JWT = {
-    "AUTH_HEADER_TYPES": ["Bearer"],
+    "AUTH_HEADER_TYPES": ("Bearer"),
     "ACCESS_TOKEN_LIFETIME": datetime.timedelta(seconds=30),
     "REFRESH_TOKEN_LIFETIME": datetime.timedelta(minutes=1),
 }
