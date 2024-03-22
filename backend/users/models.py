@@ -4,31 +4,32 @@ from django.core.validators import EmailValidator
 
 from utils.constants import error_messages
 
-class UserManager(BaseUserManager):
-    def _create_user(self, email, username, password, **extra_fields):
-        if not email:
-            raise ValueError('No email specified')
+# class UserManager(BaseUserManager):
+#     def _create_user(self, email, username, password, **extra_fields):
+#         if not email:
+#             raise ValueError('No email specified')
 
-        if not username:
-            raise ValueError('No username specified')
+#         if not username:
+#             raise ValueError('No username specified')
 
-        user = self.model(
-            email = self.normalize_email(email),
-            username = username,
-            **extra_fields,
-        )
+#         user = self.model(
+#             email = self.normalize_email(email),
+#             username = username,
+#             **extra_fields,
+#         )
 
-        user.set_password(password)
+#         user.set_password(password)
 
-        user.save(using=self._db)
+#         user.save(using=self._db)
 
-        return user
+#         return user
     
-    def create_user(self, email, username, password):
-        return self._create_user(email, username, password, role='user')
+#     def create_user(self, email, username, password):
+#         return self._create_user(email, username, password, role='user')
 
-    def create_superuser(self, email, username, password):
-        return self._create_user(email, username, password, role='admin')
+#     def create_superuser(self, email, username, password):
+#         return self._create_user(email, username, password, role='admin')
+
 class User(AbstractUser, PermissionsMixin):
     id = models.AutoField(primary_key=True, unique=True)
     username = models.CharField(
@@ -49,6 +50,3 @@ class User(AbstractUser, PermissionsMixin):
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
-
-    # def __str__(self):
-    #     return self.email
