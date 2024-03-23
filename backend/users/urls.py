@@ -8,5 +8,5 @@ urlpatterns = [
     path('me/', get_me),
     path('delete/', UserDeleteAPIView.as_view()),
     path('delete/<int:pk>/', UserDeleteAPIView.as_view()),
-    path('update/<int:pk>/', UserUpdateAPIView.as_view())
+    path('update/<int:pk>/', UserUpdateAPIView.as_view()),
 ]

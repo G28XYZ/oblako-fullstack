@@ -10,14 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
-import datetime
-from pathlib import Path
-import os
-from django.core.files.storage import FileSystemStorage
-
+import config.settings as CONFIG
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = CONFIG.BASE_DIR
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -26,11 +22,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-51fy7oh%q11hmb&#)xax#6k3oir6$0-ph1ld9zdq!(-3ppun$0'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = CONFIG.DEBUG
 
-ALLOWED_HOSTS = []
+# LOGGING = CONFIG.LOGGING
 
-FILE_SYSTEM = FileSystemStorage(location='files/storage')
+ALLOWED_HOSTS = CONFIG.ALLOWED_HOSTS
+
+FILE_SYSTEM = CONFIG.FILE_SYSTEM
 
 # Application definition
 
@@ -48,6 +46,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     
+    'config',
     'authorize',
     'users',
     'files',
@@ -85,55 +84,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'oblako.wsgi.application'
 
-REST_FRAMEWORK = {
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
-    ],
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-        # 'rest_framework.authentication.SessionAuthentication',
-        'authorize.authentication.TokenAuthentication'
-    ),
-    "EXCEPTION_HANDLER": ("utils.handlers.handle_exceptions")
-}
+REST_FRAMEWORK = CONFIG.REST_FRAMEWORK
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'oblakodb'),
-        'USER': os.environ.get('DB_USER', 'student'),
-        'PASSWORD': os.environ.get('DB_PASS', 'student'),
-        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
-        'PORT': os.environ.get('DB_PORT', 5432),
-    }
-}
+DATABASES = CONFIG.DATABASES
 
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-        'OPTIONS': {
-            'min_length': 6,
-        }
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
+AUTH_PASSWORD_VALIDATORS = CONFIG.AUTH_PASSWORD_VALIDATORS
 
-AUTH_USER_MODEL = "users.User"
+AUTH_USER_MODEL = CONFIG.AUTH_USER_MODEL
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
@@ -159,52 +123,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-CORS_ALLOW_METHODS = [
-    'GET',
-    'POST',
-    'PUT',
-    'DELETE',
-    'PATCH',
-]
+CORS_ALLOW_METHODS = CONFIG.CORS_ALLOW_METHODS
 
-SECRET_KEY = 'SECRET_KEY'
+SECRET_KEY = CONFIG.SECRET_KEY
 
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": datetime.timedelta(days=1),
-    "REFRESH_TOKEN_LIFETIME": datetime.timedelta(days=2),
-    "ROTATE_REFRESH_TOKENS": False,
-    "BLACKLIST_AFTER_ROTATION": False,
-    "UPDATE_LAST_LOGIN": False,
-
-    "ALGORITHM": "HS256",
-    "SIGNING_KEY": SECRET_KEY,
-    "VERIFYING_KEY": "",
-    "AUDIENCE": None,
-    "ISSUER": None,
-    "JSON_ENCODER": None,
-    "JWK_URL": None,
-    "LEEWAY": 0,
-
-    "AUTH_HEADER_TYPES": ("Bearer",),
-    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
-    "USER_ID_FIELD": "id",
-    "USER_ID_CLAIM": "user_id",
-    "USER_AUTHENTICATION_RULE": "rest_framework_simplejwt.authentication.default_user_authentication_rule",
-
-    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
-    "TOKEN_TYPE_CLAIM": "token_type",
-    "TOKEN_USER_CLASS": "rest_framework_simplejwt.models.TokenUser",
-
-    "JTI_CLAIM": "jti",
-
-    "SLIDING_TOKEN_REFRESH_EXP_CLAIM": "refresh_exp",
-    "SLIDING_TOKEN_LIFETIME": datetime.timedelta(days=1),
-    "SLIDING_TOKEN_REFRESH_LIFETIME": datetime.timedelta(days=2),
-
-    "TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainPairSerializer",
-    "TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSerializer",
-    "TOKEN_VERIFY_SERIALIZER": "rest_framework_simplejwt.serializers.TokenVerifySerializer",
-    "TOKEN_BLACKLIST_SERIALIZER": "rest_framework_simplejwt.serializers.TokenBlacklistSerializer",
-    "SLIDING_TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainSlidingSerializer",
-    "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
-}
+SIMPLE_JWT = CONFIG.SIMPLE_JWT

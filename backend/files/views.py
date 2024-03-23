@@ -1,6 +1,9 @@
+import logging
+logger = logging.getLogger( __name__)
+
+from django.shortcuts import render
 from django.http import FileResponse
 from rest_framework import generics
-from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -10,7 +13,7 @@ from datetime import date
 
 from .serializers import FileSerializer
 from .models import File
-from utils.constants import create_response_data
+from utils.constants import create_response_data, public_file_fields, check_request_file
 from oblako.settings import FILE_SYSTEM
 from utils.mixins import StaffEditorPermissionMixin
 
@@ -19,10 +22,17 @@ class FileAPIView(StaffEditorPermissionMixin, generics.ListAPIView):
     serializer_class = FileSerializer
     
     def get(self, request, *args, **kwargs):
-        response = super().get(self, request, args, kwargs)
-        if response:
-            response.data = create_response_data(response.data)
+        response = Response()
+        user_id = kwargs.get('pk', None)
+        if user_id:
+            files = self.queryset.filter(owner_id=user_id).values(*public_file_fields)
+            response.data = create_response_data(files)
             return response
+        else:
+            response = super().get(self, request, args, kwargs)
+            if response:
+                response.data = create_response_data(response.data)
+        return response
     
     def post(self, request):
         serializer = FileSerializer(data=request.data)
@@ -30,19 +40,17 @@ class FileAPIView(StaffEditorPermissionMixin, generics.ListAPIView):
         data = {}
 
         if serializer.is_valid():
-            serializer.create(user_id=request.user.id, file=request.FILES['file'])
+            if check_request_file(request):
+                serializer.create(user_id=request.user.id, file=request.FILES['file'])
 
-            data = self.get_queryset().values(
-                'id',
-                'owner',
-                'size',
-                'origin_name',
-                'created_at',
-                'downloaded_at',
-                'comment'
-            )
-            
-            return Response(data, status=status.HTTP_200_OK) 
+                data = self.get_queryset().values(*public_file_fields)
+                
+                return Response(create_response_data(data), status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    create_response_data(type='error', data=[{'message': 'Файл не найден, выберите файл и отправьте'}]),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         data = serializer.errors
 
@@ -77,184 +85,9 @@ class FileDeleteAPIView(StaffEditorPermissionMixin, generics.DestroyAPIView):
 
         return response
 
-class FileView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self, user_id=None):
-
-        if self.request.user.role == 'admin' and user_id:
-            return File.objects.filter(owner=user_id).all()
-
-        return File.objects.filter(owner=self.request.user.id).all()
-
-    def get(self, request):
-        user = request.user
-        if user:
-            files = self.get_queryset(user.id).values(
-                'id',
-                'owner__username',
-                'size',
-                'origin_name',
-                'created_at',
-                'downloaded_at',
-                'comment'
-            )
-            return Response(create_response_data(files))
-            
-            
-        file = self.get_queryset().filter(id = request.query_params['id']).first()
-
-        if file:
-            file.downloaded_at = date.today()
-            file.save()
-            return FileResponse(file.file, status.HTTP_200_OK, as_attachment=True)
-
-        data = {
-                'message': 'The file not found',
-            }
-        
-        return Response(data, status=status.HTTP_404_NOT_FOUND)
-    
-    def post(self, request):
-        serializer = FileSerializer(data=request.data)
-
-        data = {}
-
-        if serializer.is_valid():
-            serializer.create(user_id=request.user.id, file=request.FILES['file'])
-
-            data = self.get_queryset().values(
-                'id',
-                'user__username',
-                'size',
-                'origin_name',
-                'created_at',
-                'downloaded_at',
-                'comment'
-            )
-            
-            return Response(data, status=status.HTTP_200_OK) 
-
-        data = serializer.errors
-
-        return Response(data)
-
-    def patch(self, request):
-        serializer = FileSerializer(data=request.data)
-
-        data = {}
-
-        if serializer.is_valid():
-            user = request.user
-
-            serializer.patch(
-                owner=user,
-            )
-
-            if 'user_storage_id' in request.query_params and user.role == 'admin':
-                data = self.get_queryset(
-                    user_id=request.query_params['user_storage_id']
-                ).values(
-                    'id',
-                    'user__username',
-                    'size',
-                    'origin_name',
-                    'created_at',
-                    'downloaded_at',
-                    'comment',
-                )
-            else:
-                data = self.get_queryset().values(
-                    'id',
-                    'user__username',
-                    'size',
-                    'origin_name',
-                    'created_at',
-                    'downloaded_at',
-                    'comment'
-                )
-
-            return Response(data)
-
-        data = serializer.errors
-        
-        return Response(data)
-
-    def delete(self, request):
-        if request.user.role == 'admin':
-            deleted_file = File.objects.filter(
-                id=int(request.query_params['id'])
-            ).first()
-        else:
-            deleted_file = File.objects.filter(
-                user_id=request.user.id
-            ).all().filter(
-                id=int(request.query_params['id'])
-            ).first()
-
-        if deleted_file:
-            FILE_SYSTEM.delete(deleted_file.storage_name)
-
-            deleted_file.delete()
-
-            user = request.user
-
-            if 'user_storage_id' in request.query_params and user.is_staff:
-                data = self.get_queryset(
-                    user_id=request.query_params['user_storage_id']
-                ).values(
-                    'id',
-                    'user__username',
-                    'size',
-                    'origin_name',
-                    'created_at',
-                    'downloaded_at',
-                    'comment',
-                )
-            else:
-                data = self.get_queryset().values(
-                    'id',
-                    'user__username',
-                    'size',
-                    'origin_name',
-                    'created_at',
-                    'downloaded_at',
-                    'comment',
-                )
-       
-            return Response(data, status.HTTP_200_OK)
-
-        data = {
-            'message': 'The file not found',
-        }
-        
-        return Response(data, status.HTTP_404_NOT_FOUND)
-
-
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_link(request):
-    user_id = request.user.id
-    file_id = request.query_params['file_id']
-
-    if request.user.role == 'admin':
-        file = File.objects.filter(id=file_id).first()
-    else:
-        file = File.objects.filter(user_id=user_id).filter(id=file_id).first()
-    
-    if file:
-        data = {
-            'link': file.id,
-        }
-
-        return Response(data, status=status.HTTP_200_OK)
-
-    return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-@api_view(['GET'])
-def get_file(request, file_id):
-    file = File.objects.filter(id=file_id).first()
+def download_file(request, link_id):
+    file = File.objects.filter(public_link=link_id).first()
 
     if file:
         file.downloaded_at = date.today()
@@ -262,4 +95,27 @@ def get_file(request, file_id):
         
         return FileResponse(file.file, status.HTTP_200_OK, as_attachment=True, filename=file.origin_name)
 
-    return Response(status=status.HTTP_404_NOT_FOUND)
+    if request.user.id is not None:
+        return Response(
+            create_response_data({ 'message': 'Файл не найден' }, 'error'),
+            status=status.HTTP_404_NOT_FOUND
+        )
+        
+    return render(request, 'not_found.html')
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_link(request, file_id):
+    user_id = request.user.id
+
+    if request.user.role == 'admin':
+        file = File.objects.filter(id=file_id).first()
+    else:
+        file = File.objects.filter(owner_id=user_id).filter(id=file_id).first()
+    
+    if file:
+        data = create_response_data({ 'link_id': file.public_link })
+
+        return Response(data, status=status.HTTP_200_OK)
+    
+    return Response(create_response_data({'message': 'Файл не найден'}, 'error'), status=status.HTTP_404_NOT_FOUND)

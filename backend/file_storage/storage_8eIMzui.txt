@@ -1,0 +1,1 @@
+{"тестовый файл":{"name":"IMG_6302.png","size":382302,"type":"image/png","comment":"","id":23,"ownerId":13,"createdAt":"2024-03-20T15:54:07.722Z","downloadedAt":"2024-03-20T16:04:14.116Z"}}

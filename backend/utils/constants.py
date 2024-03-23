@@ -18,11 +18,11 @@ def create_response_data(data, type='success'):
 
 def get_random_string(l):
     letters = string.ascii_lowercase
-    random_string = ''.join(random.choice(letters) for i in range(l))
+    random_string = ''.join(random.choice(letters) for _ in range(l))
     return random_string
 
 
-def generate_download_id(l):
+def generate_random_link(l):
     return get_random_string(l)
 
 
@@ -34,3 +34,22 @@ def generate_storage_file_name(file_name):
     ext = f".{get_ext(file_name)}"
     result = FILE_SYSTEM.get_alternative_name('storage', ext)
     return result
+
+
+def check_request_file(req):
+    try:
+        return 'file' in req.FILES
+    except:
+        return False
+
+
+public_file_fields = [
+    'id',
+    'owner',
+    'size',
+    'origin_name',
+    'custom_name',
+    'created_at',
+    'downloaded_at',
+    'comment'
+]

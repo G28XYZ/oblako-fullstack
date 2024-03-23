@@ -18,6 +18,8 @@ class User(AbstractUser, PermissionsMixin):
         error_messages={ 'unique': error_messages['unique_user']('email') },
         validators=[EmailValidator(message="Введите корректный email")]
     )
+    first_name = models.CharField(max_length=50, blank=True)
+    last_name = models.CharField(max_length=50, blank=True)
     role = models.CharField(max_length=5, default='admin')
     
     USERNAME_FIELD = 'email'

@@ -1,4 +1,6 @@
-import json
+import logging
+logger = logging.getLogger( __name__)
+
 from django.db.models import Sum, Count
 from rest_framework import status, generics
 from rest_framework.response import Response
@@ -15,10 +17,9 @@ from .serializers import UserSerializer
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdminUser])
-def get_users(_):
-    result = User.objects.annotate(
-        size=Sum('filemodel__size'), count=Count('filemodel__id')
-        ).values('id', 'username', 'email', 'count', 'size')
+def get_users(request):
+    logger.info('API request: %s %s' % (request.method, request.path))
+    result = User.objects.annotate(size=Sum('file__size'), count=Count('file__id')).values('id', 'username', 'email', 'count', 'size')
 
     if result:
         return Response(create_response_data(result), status=status.HTTP_200_OK)
@@ -31,6 +32,7 @@ class UserUpdateAPIView(StaffEditorPermissionMixin, generics.UpdateAPIView):
     # lookup_field = 'pk' # default
     
     def perform_update(self, serializer):
+        logger.info('API request: %s %s' % (self.request.method, self.request.path))
         instance = self.get_object()
         serializer.save(is_superuser=instance.role == 'admin')
 
@@ -39,6 +41,7 @@ class UserDeleteAPIView(StaffEditorPermissionMixin, generics.DestroyAPIView):
     serializer_class = UserSerializer
 
     def delete(self, request, *args, **kwargs):
+        logger.info('API request: %s %s' % (request.method, request.path))
         user_ids = request.data
         pk = kwargs.get('pk', None)
         response = Response()
@@ -60,16 +63,16 @@ class UserDeleteAPIView(StaffEditorPermissionMixin, generics.DestroyAPIView):
 
         return response
 
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_me(request):
+    logger.info('API request: %s %s' % (request.method, request.path))
     try:
         user = User.objects.filter(
                 id=request.user.id
             ).annotate(
-                size=Sum('filemodel__size'),
-                count=Count('filemodel__id'),
+                size=Sum('file__size'),
+                count=Count('file__id'),
             ).values('id', 'username', 'email', 'count', 'size')
         
         
