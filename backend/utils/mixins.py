@@ -5,7 +5,6 @@ from .permissions import IsStaffEditorPermission
 class StaffEditorPermissionMixin():
     permission_classes = [IsAdminUser, IsAuthenticated, IsStaffEditorPermission]
 
-
 class UserQuerySetMixin():
     user_field = 'user'
     allow_staff_view = False

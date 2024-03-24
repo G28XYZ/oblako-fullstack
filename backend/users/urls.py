@@ -2,7 +2,7 @@ from django.urls import path
 
 from .views import get_users, get_me, UserDeleteAPIView, UserUpdateAPIView
 
-# /users/
+# api/users/
 urlpatterns = [
     path('', get_users),
     path('me/', get_me),

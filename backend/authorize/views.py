@@ -57,7 +57,7 @@ class LoginView(APIView):
 
         if email is None or password is None:
             return Response(
-                create_response_data(type='error', data={'error': 'Нужен и email, и пароль'}),
+                create_response_data(type='error', data={'message': 'Нужен и email, и пароль'}),
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -65,7 +65,7 @@ class LoginView(APIView):
 
         if user is None:
             return Response(
-                create_response_data([{"message": 'Некорректно введены email или пароль'}]),
+                create_response_data([{"message": 'Некорректно введены email или пароль'}], 'error'),
                 status=status.HTTP_401_UNAUTHORIZED
             )
         

@@ -1,14 +1,18 @@
 from rest_framework import serializers
 
 from users.models import User
-from utils.validators import min_length
+from utils.validators import min_length, spec_symbol, include_capitalize
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
         required=True,
         # TODO - добавить валидаторы на корректность введенных символов в пароле в соотв с требованиями
-        validators=[lambda value: min_length(value, 6, 'пароля')]
+        validators=[
+            lambda value: min_length(value, 6, 'пароля'),
+            lambda value: spec_symbol(value),
+            lambda value: include_capitalize(value)
+        ]
     )
     class Meta:
         model = User

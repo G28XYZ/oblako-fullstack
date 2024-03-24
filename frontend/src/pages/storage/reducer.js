@@ -2,163 +2,134 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { api } from "../../api";
 import { handleResponse } from "../../utils";
 
-const onSaveFile = createAsyncThunk("storage/saveFile", async ({ fileData, actions }, thunkApi) => {
-  if (fileData) {
-    const res = await handleResponse(api.onUpdateFile.bind(this, fileData), thunkApi);
-    if (res.data) {
-      await thunkApi.dispatch(actions.user.getMe());
+const onSaveFile = createAsyncThunk("storage/saveFile", async ({ fileData, fileId }, thunkApi) => {
+    if (fileData) {
+        const res = await handleResponse(api.onUpdateFile.bind(this, fileId, fileData), thunkApi);
+        return res.data;
     }
+});
+
+const onLoadFile = createAsyncThunk("storage/loadFile", async (fileData, thunkApi) => {
+    if (fileData) {
+        const res = await handleResponse(api.onLoadFile.bind(this, fileData), thunkApi);
+        return res.data;
+    }
+});
+
+const onGetDownloadFileLink = createAsyncThunk("storage/copyFile", async (fileId, thunkApi) => {
+    const res = await handleResponse(api.onGetDownloadFileLink.bind(this, fileId), thunkApi);
     return res.data;
-  }
 });
 
-const onLoadFile = createAsyncThunk("storage/loadFile", async ({ fileData, actions }, thunkApi) => {
-  if (fileData) {
-    const res = await handleResponse(api.onLoadFile.bind(this, fileData), thunkApi);
-    if (res.data) {
-      await thunkApi.dispatch(actions.user.getMe());
-    }
+const onDeleteFile = createAsyncThunk("storage/deleteFile", async (fileId, thunkApi) => {
+    const res = await handleResponse(api.onDeleteFile.bind(this, fileId), thunkApi);
+    return { responseData: res.data, fileId };
+});
+
+const onDeleteManyFiles = createAsyncThunk("storage/deleteManyFiles", async (fileIds, thunkApi) => {
+    const res = await handleResponse(api.onDeleteManyFiles.bind(this, fileIds), thunkApi);
+    return { responseData: res.data, fileIds };
+});
+
+const onDownloadFile = createAsyncThunk("storage/downloadFile", async (fileId, thunkApi) => {
+    const res = await handleResponse(api.onDownloadFile.bind(this, fileId), thunkApi);
     return res.data;
-  }
 });
 
-const onCopyFile = createAsyncThunk("storage/copyFile", async ({ fileId, actions }, thunkApi) => {
-  const res = await handleResponse(api.onCopyFile.bind(this, fileId), thunkApi);
-  if (res.data) {
-    await thunkApi.dispatch(actions.user.getMe());
-  }
-  return res.data;
-});
-
-const onDeleteFile = createAsyncThunk("storage/deleteFile", async ({ fileId, actions }, thunkApi) => {
-  const res = await handleResponse(api.onDeleteFile.bind(this, fileId), thunkApi);
-  if (res.data) {
-    await thunkApi.dispatch(actions.user.getMe());
-  }
-  return res.data;
-});
-
-const onDeleteManyFiles = createAsyncThunk("storage/deleteManyFiles", async ({ fileIds, actions }, thunkApi) => {
-  const res = await handleResponse(api.onDeleteManyFiles.bind(this, fileIds), thunkApi);
-  if (res.data) {
-    await thunkApi.dispatch(actions.user.getMe());
-  }
-  return res.data;
-});
-
-const onDownloadFile = createAsyncThunk("storage/downloadFile", async ({ fileId, actions }, thunkApi) => {
-  const res = await handleResponse(api.onDownloadFile.bind(this, fileId), thunkApi);
-  if (res.data) {
-    const file = res.data;
-
-    const blob = new Blob([JSON.stringify({ "тестовый файл": file })], { type: "text/plain" });
-    const link = document.createElement("a");
-    link.download = `${file.name}.txt`;
-    link.href = window.URL.createObjectURL(blob);
-    link.onclick = function () {
-      setTimeout(() => {
-        window.URL.revokeObjectURL(this.href);
-      }, 1500);
-    };
-    link.click();
-    link.remove();
-
-    await thunkApi.dispatch(actions.user.getMe());
-  }
-  return res.data;
-});
-
-const handleClickLoadFile = createAsyncThunk("storage/handleClickLoadFile", async (actions, thunkApi) => {
-  const input = document.createElement("input");
-  input.setAttribute("type", "file");
-  input.style.display = "none";
-  input.click();
-  input.addEventListener("change", async () => {
-    const [file] = input.files;
-    // TODO
-    // if (file && file.size > 27e6) {
-    // setErrorLoadFile("Файл превышает 25 мб");
-    // } else {
-
-    if (file) {
-      const newFile = {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        comment: "",
-      };
-      thunkApi.dispatch(actions.storage.setFile({ file: newFile, isEditFile: false }));
-    }
-    input.remove();
-  });
+const getFiles = createAsyncThunk("storage/getFiles", async (userId, thunkApi) => {
+    const res = await handleResponse(api.getFiles.bind(this, userId), thunkApi);
+    return res.data;
 });
 
 export const storageSlice = createSlice({
-  name: "storage",
-  initialState: {
-    isEditFile: false,
-    file: null,
-    errorSaveFile: "",
-  },
-  reducers: {
-    setFile(state, { payload }) {
-      state.file = payload.file;
-      state.isEditFile = Boolean(payload.isEditFile);
+    name: "storage",
+    initialState: {
+        isEditFile: false,
+        fileData: null,
+        files: [],
+        errorSaveFile: "",
+        fileDataSnapshot: null,
+        isModified: false,
     },
-    setErrorLoadFile(state, { payload }) {
-      state.errorSaveFile = payload;
+    reducers: {
+        setFile(state, { payload }) {
+            state.fileData = payload.fileData;
+            state.fileDataSnapshot = payload.fileData;
+            state.isModified = false;
+            state.isEditFile = Boolean(payload.isEditFile);
+        },
+        setFiles(state, { payload }) {
+            state.files = payload;
+        },
+        pushFiles(state, { payload }) {
+            state.files = state.files.concat(payload);
+        },
+        setErrorLoadFile(state, { payload }) {
+            state.errorSaveFile = payload;
+        },
+        onChangeValueFile(state, { payload }) {
+            state.fileData = { ...state.fileData, ...payload };
+            state.isModified = Object.entries(state.fileData).some(([field, value]) => state.fileDataSnapshot[field] !== value);
+        },
     },
-    onChangeValueFile(state, { payload }) {
-      state.file = { ...state.file, ...payload };
+    extraReducers(builder) {
+        builder
+            .addCase(onSaveFile.fulfilled, (state) => {
+                state.errorSaveFile = "";
+            })
+            .addCase(onLoadFile.fulfilled, (state) => {
+                state.fileData = null;
+                state.fileDataSnapshot = null;
+                state.isModified = false;
+                state.errorSaveFile = "";
+            })
+            .addCase(onDeleteFile.fulfilled, (state, { payload }) => {
+                state.fileData = null;
+                state.fileDataSnapshot = null;
+                state.isModified = false;
+                state.files = state.files.filter((item) => payload.fileId !== item.id);
+                state.errorSaveFile = "";
+            })
+            .addCase(onDeleteManyFiles.fulfilled, (state, { payload }) => {
+                state.files = state.files.filter((item) => !payload.fileIds.includes(item.id));
+                state.errorSaveFile = "";
+            })
+            .addCase(onGetDownloadFileLink.fulfilled, (state, { payload }) => {
+                navigator.clipboard.writeText(`${BASE_URL}/api/files/download/${payload?.link_id}`);
+            })
+            .addCase(onDownloadFile.fulfilled, (state) => {
+                state.errorSaveFile = "";
+            })
+            .addCase(getFiles.fulfilled, (state, { payload }) => {
+                if (payload?.length) {
+                    state.files = payload;
+                }
+            })
+            .addCase(onDownloadFile.rejected, (state) => {
+                state.errorSaveFile = "Ошибка запроса к хранилищу";
+            })
+            .addCase(onSaveFile.rejected, (state) => {
+                state.errorSaveFile = "Ошибка запроса к хранилищу";
+            })
+            .addCase(onDeleteFile.rejected, (state) => {
+                state.errorSaveFile = "Ошибка запроса к хранилищу";
+            })
+            .addCase(onGetDownloadFileLink.rejected, (state) => {
+                state.errorSaveFile = "Ошибка запроса к хранилищу";
+            })
+            .addCase(onDeleteManyFiles.rejected, (state) => {
+                state.errorSaveFile = "Ошибка запроса к хранилищу";
+            });
     },
-  },
-  extraReducers(builder) {
-    builder
-      .addCase(onSaveFile.fulfilled, (state) => {
-        state.errorSaveFile = "";
-      })
-      .addCase(onLoadFile.fulfilled, (state) => {
-        state.file = null;
-        state.errorSaveFile = "";
-      })
-      .addCase(onDeleteFile.fulfilled, (state) => {
-        state.file = null;
-        state.errorSaveFile = "";
-      })
-      .addCase(onDeleteManyFiles.fulfilled, (state) => {
-        state.errorSaveFile = "";
-      })
-      .addCase(onDownloadFile.fulfilled, (state) => {
-        state.errorSaveFile = "";
-      })
-      .addCase(onDownloadFile.rejected, (state) => {
-        state.errorSaveFile = "Ошибка запроса к хранилищу";
-      })
-      .addCase(onSaveFile.rejected, (state) => {
-        state.errorSaveFile = "Ошибка запроса к хранилищу";
-      })
-      .addCase(onLoadFile.rejected, (state) => {
-        state.errorSaveFile = "Ошибка запроса к хранилищу";
-      })
-      .addCase(onDeleteFile.rejected, (state) => {
-        state.errorSaveFile = "Ошибка запроса к хранилищу";
-      })
-      .addCase(onCopyFile.rejected, (state) => {
-        state.errorSaveFile = "Ошибка запроса к хранилищу";
-      })
-      .addCase(onDeleteManyFiles.rejected, (state) => {
-        state.errorSaveFile = "Ошибка запроса к хранилищу";
-      });
-  },
 });
 
 storageSlice.actions = {
-  ...storageSlice.actions,
-  onSaveFile,
-  onLoadFile,
-  onDeleteFile,
-  handleClickLoadFile,
-  onCopyFile,
-  onDeleteManyFiles,
-  onDownloadFile,
+    ...storageSlice.actions,
+    onSaveFile,
+    onLoadFile,
+    onDeleteFile,
+    onGetDownloadFileLink,
+    onDeleteManyFiles,
+    onDownloadFile,
+    getFiles,
 };

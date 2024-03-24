@@ -42,6 +42,14 @@ def check_request_file(req):
     except:
         return False
 
+def factory_current_data(data, public_fields):
+    result = {}
+
+    for field in data:
+        if field in public_fields:
+            result[field] = data[field]
+            
+    return result
 
 public_file_fields = [
     'id',
@@ -51,5 +59,14 @@ public_file_fields = [
     'custom_name',
     'created_at',
     'downloaded_at',
-    'comment'
+    'comment',
+]
+
+public_user_fields = [
+    'id',
+    'username',
+    'email',
+    'file_count',
+    'total_size',
+    'role',
 ]

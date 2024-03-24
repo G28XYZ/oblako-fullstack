@@ -1,76 +1,98 @@
 import { AUTH_TOKEN_NAME } from "../utils/constants";
 
 class Api {
-  #baseUrl = BASE_URL;
+    #baseUrl = `${BASE_URL}/api`;
 
-  #token = localStorage.getItem(AUTH_TOKEN_NAME);
+    #token = localStorage.getItem(AUTH_TOKEN_NAME);
 
-  #urls = {
-    login: `${this.#baseUrl}/signin`,
-    register: `${this.#baseUrl}/signup`,
-    me: `${this.#baseUrl}/me`,
-    users: `${this.#baseUrl}/users`,
-    updateUser: `${this.#baseUrl}/users/update`,
-    deleteUsers: `${this.#baseUrl}/users/delete`,
-    loadFile: `${this.#baseUrl}/files/load`,
-    updateFile: `${this.#baseUrl}/files/update`,
-    deleteFile: `${this.#baseUrl}/files/delete`,
-    downloadFile: `${this.#baseUrl}/files/download`,
-    copyFile: `${this.#baseUrl}/files/copy`,
-  };
+    #urls = {
+        login: `${this.#baseUrl}/signin`,
+        register: `${this.#baseUrl}/signup`,
+        me: `${this.#baseUrl}/users/me`,
+        users: `${this.#baseUrl}/users`,
+        updateUser: `${this.#baseUrl}/users/update`,
+        deleteUsers: `${this.#baseUrl}/users/delete`,
+        files: `${this.#baseUrl}/files`,
+        loadFile: `${this.#baseUrl}/files/load/`,
+        updateFile: `${this.#baseUrl}/files/update`,
+        deleteFile: `${this.#baseUrl}/files/delete`,
+        downloadFile: `${this.#baseUrl}/files/download`,
+        getLink: `${this.#baseUrl}/files/link`,
+        copyFile: `${this.#baseUrl}/files/copy`,
+    };
 
-  async #handleRequest(response) {
-    return response?.json() || Promise.reject({ message: "Error api.handleRequest", response });
-  }
-
-  get #headers() {
-    let headers = {};
-    if (this.#token) {
-      headers.authorization = `Bearer ${this.#token}`;
+    async #handleRequest(response) {
+        return response?.json() || Promise.reject({ message: "Error api.handleRequest", response });
     }
-    return headers;
-  }
 
-  setToken(token = localStorage.getItem(AUTH_TOKEN_NAME)) {
-    this.#token = token;
-  }
-
-  getToken() {
-    return this.#token;
-  }
-
-  getMe = async () => await fetch(this.#urls.me, { headers: this.#headers }).then(this.#handleRequest);
-
-  #createRequest = async (url, method = "GET", body) => {
-    const headers = this.#headers;
-    body = body ? JSON.stringify(body) : undefined;
-    if (method !== "GET") {
-      headers["Content-Type"] = "application/json;charset=utf-8";
+    get #headers() {
+        let headers = {
+            credentials: "include",
+        };
+        if (this.#token) {
+            headers.Authorization = `Bearer ${this.#token}`;
+        }
+        return headers;
     }
-    return await fetch(url, { body, method, headers }).then(this.#handleRequest);
-  };
 
-  onLogin = async (body) => await this.#createRequest(this.#urls.login, "POST", body);
+    setToken(token = localStorage.getItem(AUTH_TOKEN_NAME)) {
+        this.#token = token;
+    }
 
-  onRegister = async (body) => await this.#createRequest(this.#urls.register, "POST", body);
+    getToken() {
+        return this.#token;
+    }
 
-  getUsers = async () => await this.#createRequest(this.#urls.users);
+    #createRequest = async (url, method = "GET", body, headers) => {
+        headers = { ...this.#headers, ...headers };
+        body = body ? JSON.stringify(body) : undefined;
+        if (method !== "GET") {
+            headers["Content-Type"] = "application/json;charset=utf-8";
+        }
+        return await fetch(url, { body, method, headers }).then(this.#handleRequest);
+    };
 
-  onUpdateUser = async (userId, body) => await this.#createRequest(`${this.#urls.updateUser}/${userId}`, "PUT", body);
+    getMe = async () => await this.#createRequest(this.#urls.me);
 
-  onDeleteUsers = async (userIds = []) => await this.#createRequest(`${this.#urls.deleteUsers}`, "DELETE", userIds);
+    onLogin = async (body) => await this.#createRequest(this.#urls.login, "POST", body);
 
-  onLoadFile = async (fileData) => await this.#createRequest(`${this.#urls.loadFile}`, "POST", fileData);
+    onRegister = async (body) => await this.#createRequest(this.#urls.register, "POST", body);
 
-  onUpdateFile = async (fileData) => await this.#createRequest(`${this.#urls.updateFile}`, "PUT", fileData);
+    getUsers = async () => await this.#createRequest(this.#urls.users);
 
-  onDeleteFile = async (fileId) => await this.#createRequest(`${this.#urls.deleteFile}/${fileId}`, "DELETE");
+    getFiles = async (userId = "") => await this.#createRequest(`${this.#urls.files}/${userId}/`);
 
-  onDeleteManyFiles = async (fileIds) => await this.#createRequest(`${this.#urls.deleteFile}`, "DELETE", fileIds);
+    onUpdateUser = async (userId, body) => await this.#createRequest(`${this.#urls.updateUser}/${userId}/`, "PATCH", body);
 
-  onDownloadFile = async (fileId) => await this.#createRequest(`${this.#urls.downloadFile}/${fileId}`);
+    onDeleteUsers = async (userIds = []) => await this.#createRequest(`${this.#urls.deleteUsers}/`, "DELETE", userIds);
 
-  onCopyFile = async (fileId) => await this.#createRequest(`${this.#urls.copyFile}/${fileId}`);
+    onLoadFile = async (body) =>
+        await fetch(`${this.#urls.loadFile}`, { method: "POST", body, headers: this.#headers }).then(this.#handleRequest);
+
+    onUpdateFile = async (fileId, fileData) => await this.#createRequest(`${this.#urls.updateFile}/${fileId}/`, "PATCH", fileData);
+
+    onDeleteFile = async (fileId) => await this.#createRequest(`${this.#urls.deleteFile}/${fileId}/`, "DELETE");
+
+    onDeleteManyFiles = async (fileIds) => await this.#createRequest(`${this.#urls.deleteFile}/`, "DELETE", fileIds);
+
+    onGetDownloadFileLink = async (fileId) => await this.#createRequest(`${this.#urls.getLink}/${fileId}/`);
+
+    onDownloadFile = async (fileId) => {
+        const res = await this.onGetDownloadFileLink(fileId);
+        const fileLink = res?.data?.link_id;
+        if (fileLink) {
+            const linkElement = document.createElement("a");
+            linkElement.setAttribute("href", `${this.#urls.downloadFile}/${fileLink}/`);
+            linkElement.setAttribute("download", "file");
+            linkElement.style.display = "none";
+            document.body.appendChild(linkElement);
+            linkElement.click();
+            document.body.removeChild(linkElement);
+            linkElement.remove();
+            return { data: fileLink, success: true };
+        }
+        return { errors: [{ message: "Не успешно" }], success: false };
+    };
 }
 
 export const api = new Api();

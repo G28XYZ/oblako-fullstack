@@ -1,36 +1,21 @@
 import { useSelector } from "react-redux";
-import { useState } from "react";
-import {
-  DOMHelper,
-  Table,
-  IconButton,
-  Popover,
-  Whisper,
-  Button,
-  Modal,
-  Input,
-  FlexboxGrid,
-  Checkbox,
-  Notification,
-  useToaster,
-  Progress,
-} from "rsuite";
+import { useEffect, useState } from "react";
+import { DOMHelper, Table, IconButton, Popover, Whisper, Button, Modal, Checkbox, Notification, useToaster } from "rsuite";
 import EditIcon from "@rsuite/icons/Edit";
-import RemindIcon from "@rsuite/icons/legacy/Remind";
 import FileUploadIcon from "@rsuite/icons/FileUpload";
 import FileDownloadIcon from "@rsuite/icons/FileDownload";
-import TrashIcon from "@rsuite/icons/Trash";
 import ImportIcon from "@rsuite/icons/Import";
 import WarningRoundIcon from "@rsuite/icons/WarningRound";
 import CopyIcon from "@rsuite/icons/Copy";
 
 import * as dateFns from "date-fns";
 import { useActions } from "../../store";
-import { RenderEmpty } from "../../components/grid";
 import { bytesToMegaBytes } from "../../utils";
 import { Loading } from "../../components/loading";
 import { CheckCell } from "../../components/grid/cells";
 import { PropTypes } from "prop-types";
+import { EditFileModal } from "./edit-file-modal";
+import { api } from "../../api";
 
 const { Column, HeaderCell, Cell } = Table;
 const { getHeight } = DOMHelper;
@@ -46,410 +31,322 @@ const { getHeight } = DOMHelper;
 
 /** */
 export const Storage = (props) => {
-  const [checkedKeys, setCheckedKeys] = useState([]);
-  const [deletingFiles, setDeletingFiles] = useState(false);
+    const [checkedKeys, setCheckedKeys] = useState([]);
+    const [deletingFiles, setDeletingFiles] = useState(false);
 
-  const { dispatch, actions } = useActions();
+    const [file, setFile] = useState(null);
 
-  const user = useSelector((state) => state.user);
-  const { file, errorSaveFile, isEditFile } = useSelector((state) => state.storage);
+    const { dispatch, actions } = useActions();
 
-  const { currentUser = user.data } = props;
+    const user = useSelector((state) => state.user);
+    const { fileData, fileDataSnapshot, errorSaveFile, isEditFile, files, isModified } = useSelector((state) => state.storage);
 
-  const toaster = useToaster();
-  const toast = (type, msg) => <Notification type={type} header={msg} />;
+    const { currentUser = user.data } = props;
 
-  const handleSaveFile = async (confirm) => {
-    let isSaved = false;
-    let res;
-    if (confirm) {
-      if (isEditFile) {
-        res = await dispatch(actions.storage.onSaveFile({ fileData: file, actions }));
-        isSaved = errorSaveFile === "";
-      } else {
-        res = await dispatch(actions.storage.onLoadFile({ fileData: file, actions }));
-        isSaved = errorSaveFile === "";
-      }
+    useEffect(() => {
+        dispatch(actions.storage.getFiles(currentUser.id));
+        return () => {
+            setCheckedKeys([]);
+        };
+    }, []);
+
+    const toaster = useToaster();
+    const toast = (type, msg) => <Notification type={type} header={msg} />;
+
+    const handleSaveFile = async (confirm, event) => {
+        let isSaved = false;
+        let res;
+        if (confirm) {
+            if (isEditFile) {
+                const data = Object.entries(fileData).reduce(
+                    (obj, [field, value]) => (fileDataSnapshot[field] !== value ? { ...obj, [field]: value } : obj),
+                    {}
+                );
+                res = await dispatch(actions.storage.onSaveFile({ fileData: data, fileId: fileData.id }));
+                if (res.payload) {
+                    const newFiles = files.map((item) => (item.id === res.payload.id ? res.payload : item));
+                    dispatch(actions.storage.setFiles(newFiles));
+                }
+                isSaved = errorSaveFile === "";
+            } else {
+                const body = new FormData(event.target);
+                body.append("file", file);
+                res = await api.onLoadFile(body);
+                setFile(null);
+                res?.data.length && dispatch(actions.storage.setFiles(res.data));
+                isSaved = errorSaveFile === "";
+            }
+        }
+        if (!confirm || isSaved) {
+            dispatch(actions.storage.setFile({ fileData: null }));
+            isSaved && toaster.push(toast("success", isEditFile ? "Сохранено" : "Файл загружен"), { duration: 2000 });
+            errorSaveFile && toaster.push(toast("error", "Ошибка"), { duration: 2000 });
+        }
+        return res;
+    };
+
+    const handleCopyLinkFile = async (rowData) => {
+        const res = await dispatch(actions.storage.onGetDownloadFileLink(rowData.id));
+        if (res.payload) {
+            toaster.push(toast("success", "Скопировано"), { duration: 2000 });
+        } else {
+            toaster.push(toast("error", "Ошибка"), { duration: 2000 });
+        }
+    };
+
+    const handleDeleteFiles = async () => {
+        setDeletingFiles(true);
+        const res = await dispatch(actions.storage.onDeleteManyFiles(checkedKeys));
+        if (res.payload) {
+            toaster.push(toast("success", "Выбранные файлы удалены"), {
+                duration: 2000,
+            });
+            setCheckedKeys([]);
+        } else {
+            toaster.push(toast("error", "Ошибка"), { duration: 2000 });
+        }
+        setDeletingFiles(false);
+    };
+
+    const handleClickLoadFile = () => {
+        const input = document.createElement("input");
+        input.setAttribute("type", "file");
+        input.style.display = "none";
+        input.click();
+        input.addEventListener("change", async () => {
+            const file = input.files.item(0);
+            if (file) {
+                setFile(file);
+
+                const fileData = {
+                    name: file.name,
+                    size: file.size,
+                    custom_name: file.name,
+                    origin_name: file.name,
+                    comment: "",
+                };
+
+                dispatch(
+                    actions.storage.setFile({
+                        fileData,
+                        isEditFile: false,
+                    })
+                );
+            }
+            input.remove();
+        });
+    };
+
+    const handleDownloadFile = async (rowData) => {
+        const res = await dispatch(actions.storage.onDownloadFile(rowData.id));
+        if (res.payload) {
+            const newFiles = files.map((item) => (item.id === rowData.id ? { ...item, downloaded_at: new Date().toISOString() } : item));
+            dispatch(actions.storage.setFiles(newFiles));
+            toaster.push(toast("success", "Файл скачан"), { duration: 2000 });
+        }
+    };
+
+    let checked = false;
+    let indeterminate = false;
+
+    if (checkedKeys.length && checkedKeys.length === files.length) {
+        checked = true;
+    } else if (checkedKeys.length === 0) {
+        checked = false;
+    } else if (checkedKeys.length > 0 && checkedKeys.length < files.length) {
+        indeterminate = true;
     }
-    if (!confirm || isSaved) {
-      dispatch(actions.storage.setFile({ file: null }));
-      isSaved && toaster.push(toast("success", isEditFile ? "Сохранено" : "Файл загружен"), { duration: 2000 });
-      errorSaveFile && toaster.push(toast("error", "Ошибка"), { duration: 2000 });
+
+    const handleCheckAll = (_value, checked) => {
+        const keys = checked ? files.map((item) => item.id) : [];
+        setCheckedKeys(keys);
+    };
+
+    const handleCheck = (value, checked) => {
+        const keys = checked ? [...checkedKeys, value] : checkedKeys.filter((item) => item !== value);
+        setCheckedKeys(keys);
+    };
+
+    if (!currentUser) {
+        return <Loading />;
     }
-    return res;
-  };
 
-  const handleCopyFile = async (rowData) => {
-    const res = await dispatch(actions.storage.onCopyFile({ fileId: rowData.id, actions }));
-    if (res.payload) {
-      toaster.push(toast("success", "Скопировано"), { duration: 2000 });
-    } else {
-      toaster.push(toast("error", "Ошибка"), { duration: 2000 });
-    }
-  };
-
-  const handleDeleteFiles = async () => {
-    setDeletingFiles(true);
-    const res = await dispatch(actions.storage.onDeleteManyFiles({ fileIds: checkedKeys, actions }));
-    if (res.payload) {
-      toaster.push(toast("success", "Выбранные файлы удалены"), { duration: 2000 });
-      setCheckedKeys([]);
-    } else {
-      toaster.push(toast("error", "Ошибка"), { duration: 2000 });
-    }
-    setDeletingFiles(false);
-  };
-
-  const handleDownloadFile = async (rowData) => {
-    await dispatch(actions.storage.onDownloadFile({ fileId: rowData.id, actions }));
-  };
-
-  let checked = false;
-  let indeterminate = false;
-
-  if (checkedKeys.length && checkedKeys.length === currentUser.files.length) {
-    checked = true;
-  } else if (checkedKeys.length === 0) {
-    checked = false;
-  } else if (checkedKeys.length > 0 && checkedKeys.length < currentUser.files.length) {
-    indeterminate = true;
-  }
-
-  const handleCheckAll = (_value, checked) => {
-    const keys = checked ? currentUser.files.map((item) => item.id) : [];
-    setCheckedKeys(keys);
-  };
-
-  const handleCheck = (value, checked) => {
-    const keys = checked ? [...checkedKeys, value] : checkedKeys.filter((item) => item !== value);
-    setCheckedKeys(keys);
-  };
-
-  if (!currentUser) {
-    return <Loading />;
-  }
-
-  return (
-    <>
-      <Modal
-        backdrop={true}
-        onClose={() => dispatch(actions.storage.setErrorLoadFile(""))}
-        role="alertdialog"
-        open={Boolean(errorSaveFile)}
-        size="xs"
-      >
-        <Modal.Header>
-          <WarningRoundIcon style={{ color: "red", fontSize: 24, marginRight: 10 }} />
-          Ошибка
-          <br />
-        </Modal.Header>
-        <Modal.Body>
-          Попробуйте загрузить файл позже.
-          <br />
-          <br />
-          <span>{errorSaveFile}</span>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button size="xs" onClick={() => dispatch(actions.storage.setErrorLoadFile(""))} appearance="subtle">
-            Закрыть
-          </Button>
-        </Modal.Footer>
-      </Modal>
-      <div style={{ display: "flex", marginBottom: 20, gap: 15, alignItems: "end" }}>
-        <div style={{ width: 40 }}>
-          <Progress.Circle
-            percent={parseInt(bytesToMegaBytes(currentUser.files.reduce((sum, e) => sum + e.size, 0)), 10)}
-            showInfo
-          />
-        </div>
-        {currentUser?.id === user.data?.id && (
-          <div>
-            <Button
-              startIcon={<ImportIcon />}
-              onClick={() => dispatch(actions.storage.handleClickLoadFile(actions))}
-              color="green"
-              appearance="ghost"
+    return (
+        <>
+            <Modal
+                backdrop={true}
+                onClose={() => dispatch(actions.storage.setErrorLoadFile(""))}
+                role="alertdialog"
+                open={Boolean(errorSaveFile)}
+                size="xs"
             >
-              Загрузить файл
-            </Button>
-          </div>
-        )}
-        {Boolean(checkedKeys.length) && currentUser?.id === user.data?.id && (
-          <div>
-            <Button loading={deletingFiles} onClick={handleDeleteFiles} color="red" appearance="ghost">
-              Удалить выбранное
-            </Button>
-          </div>
-        )}
-      </div>
-      <Table
-        virtualized
-        data={currentUser.files}
-        height={Math.max(getHeight(window) - 300, 400)}
-        translate3d={false}
-        renderEmpty={() => <RenderEmpty />}
-      >
-        <Column width={30} align="center" fixed>
-          <HeaderCell>Id</HeaderCell>
-          <Cell dataKey="id" />
-        </Column>
+                <Modal.Header>
+                    <WarningRoundIcon style={{ color: "red", fontSize: 24, marginRight: 10 }} />
+                    Ошибка
+                    <br />
+                </Modal.Header>
+                <Modal.Body>
+                    Попробуйте загрузить файл позже.
+                    <br />
+                    <br />
+                    <span>{errorSaveFile}</span>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button size="xs" onClick={() => dispatch(actions.storage.setErrorLoadFile(""))} appearance="subtle">
+                        Закрыть
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+            <div
+                style={{
+                    display: "flex",
+                    marginBottom: 20,
+                    gap: 15,
+                    alignItems: "end",
+                }}
+            >
+                {currentUser?.id === user.data?.id && (
+                    <div>
+                        <Button startIcon={<ImportIcon />} onClick={handleClickLoadFile} color="green" appearance="ghost">
+                            Загрузить файл
+                        </Button>
+                    </div>
+                )}
 
-        {currentUser?.id === user.data?.id && (
-          <Column width={50} fixed>
-            <HeaderCell style={{ padding: 0 }}>
-              <div style={{ lineHeight: "40px" }}>
-                <Checkbox inline checked={checked} indeterminate={indeterminate} onChange={handleCheckAll} />
-              </div>
-            </HeaderCell>
-            <CheckCell dataKey="id" checkedKeys={checkedKeys} onChange={handleCheck} disabledId={file?.id} />
-          </Column>
-        )}
+                <div>
+                    <Button
+                        disabled={Boolean(checkedKeys.length) === false}
+                        loading={deletingFiles}
+                        onClick={handleDeleteFiles}
+                        color="red"
+                        appearance="ghost"
+                    >
+                        Удалить выбранное
+                    </Button>
+                </div>
+            </div>
+            <Table
+                virtualized
+                data={[...files]?.sort((a, b) => (a?.id > b?.id ? 1 : -1))}
+                height={Math.max(getHeight(window) - 300, 400)}
+                translate3d={false}
+            >
+                <Column width={30} align="center" fixed>
+                    <HeaderCell>Id</HeaderCell>
+                    <Cell dataKey="id" />
+                </Column>
 
-        <Column width={50} align="center" fixed>
-          <HeaderCell>Скачать</HeaderCell>
-          <Cell>
-            {(rowData) => (
-              <Whisper placement="top" speaker={<Popover>Скачать - {rowData.name}</Popover>}>
-                <FileDownloadIcon
-                  onClick={() => handleDownloadFile(rowData)}
-                  style={{ color: "green", fontSize: 20, cursor: "pointer" }}
-                />
-              </Whisper>
-            )}
-          </Cell>
-        </Column>
+                <Column width={50} fixed>
+                    <HeaderCell style={{ padding: 0 }}>
+                        <div style={{ lineHeight: "40px" }}>
+                            <Checkbox inline checked={checked} indeterminate={indeterminate} onChange={handleCheckAll} />
+                        </div>
+                    </HeaderCell>
+                    <CheckCell dataKey="id" checkedKeys={checkedKeys} onChange={handleCheck} disabledId={fileData?.id} />
+                </Column>
 
-        {currentUser?.id !== user.data?.id && (
-          <Column width={120} align="center" fixed>
-            <HeaderCell>Скопировать</HeaderCell>
-            <Cell>
-              {(rowData) => (
-                <Whisper
-                  placement="top"
-                  speaker={<Popover>Скопировать себе в хранилище файл - {rowData.name}</Popover>}
-                >
-                  <CopyIcon
-                    onClick={() => handleCopyFile(rowData)}
-                    style={{ color: "blue", fontSize: 20, cursor: "pointer" }}
-                  />
-                </Whisper>
-              )}
-            </Cell>
-          </Column>
-        )}
+                <Column width={50} align="center" fixed>
+                    <HeaderCell>Скачать</HeaderCell>
+                    <Cell>
+                        {(rowData) => (
+                            <Whisper placement="top" speaker={<Popover>Скачать - {rowData.custom_name}</Popover>}>
+                                <FileDownloadIcon
+                                    onClick={() => handleDownloadFile(rowData)}
+                                    style={{
+                                        color: "green",
+                                        fontSize: 20,
+                                        cursor: "pointer",
+                                    }}
+                                />
+                            </Whisper>
+                        )}
+                    </Cell>
+                </Column>
 
-        <Column width={150} fixed>
-          <HeaderCell>Имя файла</HeaderCell>
-          <Cell dataKey="name" />
-        </Column>
+                <Column width={120} align="center" fixed>
+                    <HeaderCell>Получить ссылку</HeaderCell>
+                    <Cell>
+                        {(rowData) => (
+                            <Whisper placement="top" speaker={<Popover>Нажмите чтобы скопировать ссылку</Popover>}>
+                                <CopyIcon
+                                    onClick={() => handleCopyLinkFile(rowData)}
+                                    style={{
+                                        color: "blue",
+                                        fontSize: 20,
+                                        cursor: "pointer",
+                                    }}
+                                />
+                            </Whisper>
+                        )}
+                    </Cell>
+                </Column>
 
-        <Column width={130}>
-          <HeaderCell>Размер, Мб</HeaderCell>
-          <Cell>{(rowData) => bytesToMegaBytes(rowData.size)}</Cell>
-        </Column>
+                <Column width={150} fixed fullText>
+                    <HeaderCell>Имя файла</HeaderCell>
+                    <Cell dataKey="custom_name" />
+                </Column>
 
-        <Column width={130}>
-          <HeaderCell>Тип файла</HeaderCell>
-          <Cell dataKey="type" />
-        </Column>
+                <Column width={130} fullText>
+                    <HeaderCell>Размер, Мб</HeaderCell>
+                    <Cell>{(rowData) => bytesToMegaBytes(rowData.size)}</Cell>
+                </Column>
 
-        <Column flexGrow={1}>
-          <HeaderCell>Комментарий</HeaderCell>
-          <Cell dataKey="comment" />
-        </Column>
+                <Column flexGrow={1} fullText>
+                    <HeaderCell>Комментарий</HeaderCell>
+                    <Cell dataKey="comment" />
+                </Column>
 
-        <Column width={150}>
-          <HeaderCell>
-            <FileUploadIcon style={{ marginRight: 10 }} />
-            Дата создания
-          </HeaderCell>
-          <Cell>{(rowData) => dateFns.format(new Date(rowData.createdAt), "dd.LL.yyyy hh:mm:ss")}</Cell>
-        </Column>
+                <Column width={150} fullText>
+                    <HeaderCell>
+                        <FileUploadIcon style={{ marginRight: 10 }} />
+                        Дата создания
+                    </HeaderCell>
+                    <Cell>{(rowData) => rowData.created_at && dateFns.format(new Date(rowData.created_at), "dd.LL.yyyy hh:mm:ss")}</Cell>
+                </Column>
 
-        <Column width={150}>
-          <HeaderCell>
-            <FileDownloadIcon style={{ marginRight: 10 }} />
-            Дата скачивания
-          </HeaderCell>
-          <Cell>{(rowData) => dateFns.format(new Date(rowData.downloadedAt), "dd.LL.yyyy hh:mm:ss")}</Cell>
-        </Column>
+                <Column width={150} fullText>
+                    <HeaderCell>
+                        <FileDownloadIcon style={{ marginRight: 10 }} />
+                        Дата скачивания
+                    </HeaderCell>
+                    <Cell>
+                        {(rowData) =>
+                            rowData.downloaded_at
+                                ? dateFns.format(new Date(rowData.downloaded_at), "dd.LL.yyyy hh:mm:ss")
+                                : "Еще не скачали"
+                        }
+                    </Cell>
+                </Column>
 
-        {currentUser?.id === user.data?.id && (
-          <Column width={80} fixed="right">
-            <HeaderCell>...</HeaderCell>
+                <Column width={80} fixed="right">
+                    <HeaderCell>...</HeaderCell>
 
-            <Cell style={{ padding: "6px" }}>
-              {(rowData) => (
-                <Whisper placement="top" speaker={<Popover>Редактировать</Popover>}>
-                  <IconButton
-                    size="lg"
-                    appearance="link"
-                    icon={<EditIcon />}
-                    onClick={() => dispatch(actions.storage.setFile({ file: rowData, isEditFile: true }))}
-                  />
-                </Whisper>
-              )}
-            </Cell>
-          </Column>
-        )}
-      </Table>
-      <EditModal handleCloseModal={handleSaveFile} data={file} isLoadFile={isEditFile === false} />
-    </>
-  );
+                    <Cell style={{ padding: "6px" }}>
+                        {(rowData) => (
+                            <Whisper placement="top" speaker={<Popover>Редактировать</Popover>}>
+                                <IconButton
+                                    size="lg"
+                                    appearance="link"
+                                    icon={<EditIcon />}
+                                    onClick={() =>
+                                        dispatch(
+                                            actions.storage.setFile({
+                                                fileData: rowData,
+                                                isEditFile: true,
+                                            })
+                                        )
+                                    }
+                                />
+                            </Whisper>
+                        )}
+                    </Cell>
+                </Column>
+            </Table>
+            <EditFileModal handleCloseModal={handleSaveFile} data={fileData} isEditFile={isEditFile} isModified={isModified} />
+        </>
+    );
 };
 
 Storage.propTypes = {
-  currentUser: PropTypes.object,
-};
-
-const ControlRow = ({ label, control, ...rest }) => (
-  <FlexboxGrid {...rest} style={{ marginBottom: 10 }} align="middle">
-    <FlexboxGrid.Item colspan={10}>{label}: </FlexboxGrid.Item>
-    <FlexboxGrid.Item colspan={12}>{control}</FlexboxGrid.Item>
-  </FlexboxGrid>
-);
-
-ControlRow.propTypes = {
-  label: PropTypes.string,
-  control: PropTypes.any,
-};
-
-const EditModal = ({ handleCloseModal, data, isLoadFile = false }) => {
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [isSavingFile, setIsSavingFile] = useState(false);
-  const [isDeletingFile, setIsDeletingFile] = useState(false);
-
-  const { dispatch, actions } = useActions();
-
-  const toaster = useToaster();
-  const toast = (type, msg) => <Notification type={type} header={msg} />;
-
-  const handleSave = async (confirm) => {
-    setIsSavingFile(true);
-    await handleCloseModal(confirm);
-    setIsSavingFile(false);
-  };
-
-  const handleConfirmDelete = async (confirm) => {
-    if (confirm) {
-      setIsDeletingFile(true);
-      const res = await dispatch(actions.storage.onDeleteFile({ fileId: data.id, actions }));
-      if (res?.payload) {
-        toaster.push(toast("success", "Файл удален"), { duration: 2000 });
-      } else {
-        toaster.push(toast("error", "Ошибка"), { duration: 2000 });
-      }
-      setIsDeletingFile(false);
-    }
-    setConfirmDelete(false);
-  };
-
-  const handleChangeValue = (value) => {
-    dispatch(actions.storage.onChangeValueFile(value));
-  };
-
-  return (
-    <>
-      <Modal
-        open={confirmDelete ? false : Boolean(data)}
-        onClose={isSavingFile ? undefined : () => handleCloseModal(false)}
-        size="xs"
-        // onEntered={handleEntered}
-      >
-        <Modal.Header>
-          <Modal.Title>{isLoadFile ? "Загрузка файла" : "Редактирование файла"}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {data && (
-            <div style={{ display: "flex", flexDirection: "column", minHeight: "30vh", gap: 8 }}>
-              <ControlRow
-                label="Имя"
-                control={
-                  <Input
-                    onChange={(value) => handleChangeValue({ name: value })}
-                    disabled={isSavingFile}
-                    value={data.name}
-                    placeholder="Имя файл"
-                  />
-                }
-              />
-              <ControlRow
-                label="Комментарий"
-                control={
-                  <Input
-                    onChange={(value) => handleChangeValue({ comment: value })}
-                    disabled={isSavingFile}
-                    as="textarea"
-                    rows={3}
-                    value={data.comment}
-                    placeholder="Комментарий"
-                  />
-                }
-              />
-              <ControlRow label="Размер файла" control={bytesToMegaBytes(data.size) + " Мб"} />
-              <ControlRow label="Тип файла" control={data.type} />
-              {data.createdAt && (
-                <ControlRow
-                  control={dateFns.format(new Date(data.createdAt), "dd.LL.yyyy hh:mm:ss")}
-                  label="Дата создания"
-                />
-              )}
-              {data.downloadedAt && (
-                <ControlRow
-                  label="Дата скачивания"
-                  control={dateFns.format(new Date(data.downloadedAt), "dd.LL.yyyy hh:mm:ss")}
-                />
-              )}
-            </div>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          {!isLoadFile && (
-            <Button
-              size="xs"
-              disabled={isSavingFile}
-              color="red"
-              onClick={() => setConfirmDelete(true)}
-              appearance="primary"
-              startIcon={<TrashIcon />}
-            >
-              Удалить файл
-            </Button>
-          )}
-          <Button size="xs" loading={isSavingFile} onClick={() => handleSave(true)} appearance="primary">
-            {isLoadFile ? "Загрузить" : "Сохранить"}
-          </Button>
-          <Button size="xs" disabled={isSavingFile} onClick={() => handleCloseModal(false)} appearance="subtle">
-            Отмена
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      <Modal backdrop="static" role="alertdialog" open={confirmDelete} size="xs">
-        <Modal.Body>
-          <RemindIcon style={{ color: "#ffb300", fontSize: 24 }} />
-          <br />
-          <br />
-          Файл &apos;{data?.name}&apos; будет удален без возможности восстановления.
-          <br />
-          <br />
-          Удалить?
-        </Modal.Body>
-        <Modal.Footer>
-          <Button loading={isDeletingFile} size="xs" onClick={() => handleConfirmDelete(true)} appearance="primary">
-            Удалить
-          </Button>
-          <Button size="xs" onClick={() => handleConfirmDelete(false)} appearance="subtle">
-            Отмена
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </>
-  );
-};
-
-EditModal.propTypes = {
-  handleCloseModal: PropTypes.func,
-  data: PropTypes.object,
-  isLoadFile: PropTypes.bool,
+    currentUser: PropTypes.object,
 };

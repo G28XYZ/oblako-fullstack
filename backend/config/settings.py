@@ -2,12 +2,10 @@ import datetime
 import os
 from pathlib import Path
 from django.core.files.storage import FileSystemStorage
-import environ
 from django.utils.log import DEFAULT_LOGGING
+import environ
 
-env = environ.Env(
-    DEBUG=(bool, True)
-)
+env = environ.Env(DEBUG=(bool, True))
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -91,16 +89,6 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTH_USER_MODEL = "users.User"
-
-CORS_ALLOW_ALL_ORIGINS = True
-
-CORS_ALLOW_METHODS = [
-    'GET',
-    'POST',
-    'PUT',
-    'DELETE',
-    'PATCH',
-]
 
 SECRET_KEY = 'SECRET_KEY'
 

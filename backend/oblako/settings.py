@@ -1,4 +1,5 @@
 import config.settings as CONFIG
+from config.cors import *
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = CONFIG.BASE_DIR
@@ -10,7 +11,7 @@ BASE_DIR = CONFIG.BASE_DIR
 SECRET_KEY = 'django-insecure-51fy7oh%q11hmb&#)xax#6k3oir6$0-ph1ld9zdq!(-3ppun$0'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = CONFIG.DEBUG
+DEBUG = True
 
 # LOGGING = CONFIG.LOGGING
 
@@ -20,7 +21,7 @@ FILE_SYSTEM = CONFIG.FILE_SYSTEM
 
 # Application definition
 
-INSTALLED_APPS = [
+INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -28,7 +29,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
@@ -38,19 +38,22 @@ INSTALLED_APPS = [
     'authorize',
     'users',
     'files',
-    'utils'
-]
+    'utils',
+    
+    'corsheaders',
+)
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    "corsheaders.middleware.CorsMiddleware"
 ]
+
 
 ROOT_URLCONF = 'oblako.urls'
 
@@ -79,7 +82,6 @@ REST_FRAMEWORK = CONFIG.REST_FRAMEWORK
 
 DATABASES = CONFIG.DATABASES
 
-
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
@@ -90,13 +92,12 @@ AUTH_USER_MODEL = CONFIG.AUTH_USER_MODEL
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
-
+LANGUAGE_CODE = 'ru-RU'
+TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
-
+USE_L10N = True
 USE_TZ = True
+DATE_INPUT_FORMATS = ['%d.%m.%Y %H:%M:%S']
 
 
 # Static files (CSS, JavaScript, Images)
@@ -109,10 +110,8 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ALL_ORIGINS = True
-
-CORS_ALLOW_METHODS = CONFIG.CORS_ALLOW_METHODS
-
 SECRET_KEY = CONFIG.SECRET_KEY
 
 SIMPLE_JWT = CONFIG.SIMPLE_JWT
+
+# SESSION_COOKIE_HTTPONLY = False

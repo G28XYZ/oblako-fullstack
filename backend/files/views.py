@@ -9,17 +9,18 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 
-from datetime import date
+from django.utils import timezone
 
 from .serializers import FileSerializer
 from .models import File
-from utils.constants import create_response_data, public_file_fields, check_request_file
+from utils.constants import create_response_data, public_file_fields, check_request_file, factory_current_data
 from oblako.settings import FILE_SYSTEM
 from utils.mixins import StaffEditorPermissionMixin
 
-class FileAPIView(StaffEditorPermissionMixin, generics.ListAPIView):
+class FileAPIView(generics.ListAPIView):
     queryset = File.objects.all()
     serializer_class = FileSerializer
+    permission_classes = [IsAuthenticated]
     
     def get(self, request, *args, **kwargs):
         response = Response()
@@ -43,7 +44,7 @@ class FileAPIView(StaffEditorPermissionMixin, generics.ListAPIView):
             if check_request_file(request):
                 serializer.create(user_id=request.user.id, file=request.FILES['file'])
 
-                data = self.get_queryset().values(*public_file_fields)
+                data = self.get_queryset().filter(owner_id=request.user.id).values(*public_file_fields)
                 
                 return Response(create_response_data(data), status=status.HTTP_200_OK)
             else:
@@ -71,7 +72,7 @@ class FileDeleteAPIView(StaffEditorPermissionMixin, generics.DestroyAPIView):
             count, _ = files.delete()
             if count:
                 response.data = create_response_data({ 'message': 'Выбранные файлы удалены' })
-                response.status_code = status.HTTP_204_NO_CONTENT
+                response.status_code = status.HTTP_200_OK
             else:
                 response.data = create_response_data({ 'message': 'Выбранные файлы не существуют' }, 'error')
                 response.status_code = status.HTTP_404_NOT_FOUND
@@ -79,18 +80,33 @@ class FileDeleteAPIView(StaffEditorPermissionMixin, generics.DestroyAPIView):
             response = super().delete(self, request, args, kwargs)
             if response:
                 response.data = create_response_data({ "message": "Файл удален" })
+                response.status_code = status.HTTP_200_OK
         else:
             response.data = create_response_data({ 'message': 'Переданы не корректные данные' }, 'error')
             response.status_code = status.HTTP_400_BAD_REQUEST
 
         return response
 
+
+class FileUpdateAPIView(StaffEditorPermissionMixin, generics.UpdateAPIView):
+    queryset = File.objects.all()
+    serializer_class = FileSerializer
+    lookup_field = 'pk' # default
+
+    def patch(self, request, *args, **kwargs):
+        response = super().patch(request, *args, **kwargs)
+        if response:
+            data = response.data
+            response.data = create_response_data(factory_current_data(data, public_file_fields))
+        return response
+
+
 @api_view(['GET'])
 def download_file(request, link_id):
     file = File.objects.filter(public_link=link_id).first()
 
     if file:
-        file.downloaded_at = date.today()
+        file.downloaded_at = timezone.now()
         file.save()
         
         return FileResponse(file.file, status.HTTP_200_OK, as_attachment=True, filename=file.origin_name)

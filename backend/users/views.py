@@ -9,7 +9,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.decorators import api_view
 
 from .models import User
-from utils.constants import create_response_data
+from utils.constants import create_response_data, public_user_fields
 from utils.mixins import StaffEditorPermissionMixin
 from .serializers import UserSerializer
 
@@ -19,7 +19,10 @@ from .serializers import UserSerializer
 @permission_classes([IsAuthenticated, IsAdminUser])
 def get_users(request):
     logger.info('API request: %s %s' % (request.method, request.path))
-    result = User.objects.annotate(size=Sum('file__size'), count=Count('file__id')).values('id', 'username', 'email', 'count', 'size')
+    result = User.objects.annotate(
+            total_size=Sum('file__size'),
+            file_count=Count('file__id')
+        ).values(*public_user_fields)
 
     if result:
         return Response(create_response_data(result), status=status.HTTP_200_OK)
@@ -34,7 +37,15 @@ class UserUpdateAPIView(StaffEditorPermissionMixin, generics.UpdateAPIView):
     def perform_update(self, serializer):
         logger.info('API request: %s %s' % (self.request.method, self.request.path))
         instance = self.get_object()
-        serializer.save(is_superuser=instance.role == 'admin')
+        newInstance = serializer.save()
+        if newInstance.role != instance.role:
+            serializer.save(is_superuser = newInstance.role == 'admin')
+    
+    def patch(self, request, *args, **kwargs):
+        response = super().patch(request, *args, **kwargs)
+        if response:
+            response.data = create_response_data(response.data)
+        return response
 
 class UserDeleteAPIView(StaffEditorPermissionMixin, generics.DestroyAPIView):
     queryset = User.objects.all()
@@ -49,7 +60,7 @@ class UserDeleteAPIView(StaffEditorPermissionMixin, generics.DestroyAPIView):
             count, _ = self.queryset.filter(id__in=user_ids).delete()
             if count:
                 response.data = create_response_data({ 'message': 'Выбранные пользователи удалены' })
-                response.status_code = status.HTTP_204_NO_CONTENT
+                response.status_code = status.HTTP_200_OK
             else:
                 response.data = create_response_data({ 'message': 'Выбранных пользователей не существует' }, 'error')
                 response.status_code = status.HTTP_404_NOT_FOUND
@@ -57,6 +68,7 @@ class UserDeleteAPIView(StaffEditorPermissionMixin, generics.DestroyAPIView):
             response = super().delete(self, request, args, kwargs)
             if response:
                 response.data = create_response_data({ "message": "Пользователь удален" })
+                response.status_code = status.HTTP_200_OK
         else:
             response.data = create_response_data({ 'message': 'Переданы не корректные данные' }, 'error')
             response.status_code = status.HTTP_400_BAD_REQUEST
@@ -71,12 +83,12 @@ def get_me(request):
         user = User.objects.filter(
                 id=request.user.id
             ).annotate(
-                size=Sum('file__size'),
-                count=Count('file__id'),
-            ).values('id', 'username', 'email', 'count', 'size')
+                total_size=Sum('file__size'),
+                file_count=Count('file__id'),
+            ).values(*public_user_fields)
         
         
-        return Response(create_response_data(user))
+        return Response(create_response_data(*user))
     except:
         pass
     return Response(
