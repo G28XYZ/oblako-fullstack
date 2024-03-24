@@ -31,3 +31,4 @@ pyvenv.cfg
 __pycache__
 venv
 backend/file_storage
+backend/frontend

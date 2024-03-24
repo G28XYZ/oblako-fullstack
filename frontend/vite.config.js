@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), "");
+    const djangoBuild = env.DJANGO_BUILD;
     return {
         define: {
             BASE_URL: JSON.stringify(env.MAIN_URL),
@@ -18,6 +19,9 @@ export default defineConfig(({ mode }) => {
                 },
             }),
         ],
+        build: {
+            outDir: djangoBuild ? "../backend/frontend/" : "./dist",
+        },
 
         // server: {
         //     // port: 8080,
