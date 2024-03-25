@@ -49,7 +49,12 @@ class Api {
         if (method !== "GET") {
             headers["Content-Type"] = "application/json;charset=utf-8";
         }
-        return await fetch(url, { body, method, headers }).then(this.#handleRequest);
+        const timeout = (fn, resolve) =>
+            setTimeout(async () => {
+                resolve(await fn());
+                clearInterval(timeout);
+            }, 500);
+        return new Promise((resolve) => timeout(() => fetch(url, { body, method, headers }).then(this.#handleRequest), resolve));
     };
 
     getMe = async () => await this.#createRequest(this.#urls.me);

@@ -15,9 +15,10 @@ BASE_DIR_FRONT = Path(__file__).resolve().parent.parent.parent
 SECRET_KEY = 'django-insecure-51fy7oh%q11hmb&#)xax#6k3oir6$0-ph1ld9zdq!(-3ppun$0'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool('DEBUG')
 
-# LOGGING = CONFIG.LOGGING
+if env('LOGGER'):
+    LOGGING = CONFIG.LOGGING
 
 ALLOWED_HOSTS = CONFIG.ALLOWED_HOSTS
 
@@ -31,6 +32,7 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
     
     'rest_framework',
@@ -51,6 +53,7 @@ INSTALLED_APPS = (
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -109,10 +112,9 @@ DATE_INPUT_FORMATS = ['%d.%m.%Y %H:%M:%S']
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = '/assets/'
-
-STATIC_ROOT = ''
-
-STATICFILES_DIRS = ['frontend/assets']
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'frontend/assets'),]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

@@ -1,5 +1,5 @@
+import { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
-import { useEffect, useState } from "react";
 import { DOMHelper, Table, IconButton, Popover, Whisper, Button, Modal, Checkbox, Notification, useToaster } from "rsuite";
 import EditIcon from "@rsuite/icons/Edit";
 import FileUploadIcon from "@rsuite/icons/FileUpload";
@@ -20,15 +20,6 @@ import { api } from "../../api";
 const { Column, HeaderCell, Cell } = Table;
 const { getHeight } = DOMHelper;
 
-/**
- * file object type
- * name
- * comment
- * size
- * createdAt
- * downloadedAt
- */
-
 /** */
 export const Storage = (props) => {
     const [checkedKeys, setCheckedKeys] = useState([]);
@@ -40,13 +31,15 @@ export const Storage = (props) => {
 
     const user = useSelector((state) => state.user);
     const { fileData, fileDataSnapshot, errorSaveFile, isEditFile, files, isModified } = useSelector((state) => state.storage);
+    const { isLoading } = useSelector((state) => state.app);
 
-    const { currentUser = user.data } = props;
+    const { currentUser = user.data, parentRef = null } = props;
 
     useEffect(() => {
         dispatch(actions.storage.getFiles(currentUser.id));
         return () => {
             setCheckedKeys([]);
+            dispatch(actions.storage.setFiles([]));
         };
     }, []);
 
@@ -167,9 +160,9 @@ export const Storage = (props) => {
         setCheckedKeys(keys);
     };
 
-    if (!currentUser) {
-        return <Loading />;
-    }
+    const gridHeight = useMemo(() => getHeight(parentRef?.current || window) - 96, [parentRef, parentRef?.current]);
+
+    if (!currentUser) return <Loading />;
 
     return (
         <>
@@ -226,9 +219,10 @@ export const Storage = (props) => {
                 </div>
             </div>
             <Table
+                loading={isLoading}
                 virtualized
                 data={[...files]?.sort((a, b) => (a?.id > b?.id ? 1 : -1))}
-                height={Math.max(getHeight(window) - 300, 400)}
+                height={gridHeight}
                 translate3d={false}
             >
                 <Column width={30} align="center" fixed>
@@ -349,4 +343,5 @@ export const Storage = (props) => {
 
 Storage.propTypes = {
     currentUser: PropTypes.object,
+    parentRef: PropTypes.object,
 };

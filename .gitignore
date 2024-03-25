@@ -32,3 +32,4 @@ __pycache__
 venv
 backend/file_storage
 backend/frontend
+staticfiles

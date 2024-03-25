@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import {
     IconButton,
@@ -21,6 +21,7 @@ import { AdminCell, CheckCell, ImageCell, NameCell } from "./cells";
 import { useActions } from "../../store";
 import { Storage } from "../../pages/storage";
 import { bytesToMegaBytes } from "../../utils";
+import { PropTypes } from "prop-types";
 
 const { Column, HeaderCell, Cell } = Table;
 const { getHeight } = DOMHelper;
@@ -36,6 +37,7 @@ export const GridTable = () => {
     const [loadingDeleteButton, setLoadingDeleteButton] = useState(false);
 
     const { users: data } = useSelector((state) => state.main);
+    const { isLoading } = useSelector((state) => state.app);
 
     const toaster = useToaster();
     const toast = (type, msg) => <Notification type={type} header={msg} />;
@@ -76,6 +78,10 @@ export const GridTable = () => {
         if (res.payload) toaster.push(toast("success", "Успешно"), { duration: 2000 });
         setCheckedKeys([]);
         setLoadingDeleteButton(false);
+    };
+
+    const handleCloseModal = () => {
+        setSelectedRecord(null);
     };
 
     const factoryData = () => {
@@ -168,7 +174,7 @@ export const GridTable = () => {
                 sortColumn={sortColumn}
                 sortType={sortType}
                 onSortColumn={handleSortColumn}
-                loading={gridLoading}
+                loading={gridLoading || isLoading}
                 onRowClick={(rowData) => setSelectedRecord(rowData)}
             >
                 <Column width={50} align="center" fixed fullText>
@@ -186,7 +192,7 @@ export const GridTable = () => {
                 </Column>
 
                 <Column width={80} align="center">
-                    <HeaderCell></HeaderCell>
+                    <HeaderCell>🙂</HeaderCell>
                     <ImageCell dataKey="avatar" />
                 </Column>
 
@@ -217,16 +223,29 @@ export const GridTable = () => {
                     <AdminCell align="end" dataKey="role" currentUser={user.data} />
                 </Column>
             </Table>
-
-            <Modal backdrop="true" open={Boolean(selectedRecord)} onClose={() => setSelectedRecord(null)} size="lg">
-                <Modal.Header>Хранилище - {selectedRecord?.username}</Modal.Header>
-                <Modal.Body>{<Storage currentUser={selectedRecord || undefined} />}</Modal.Body>
-                <Modal.Footer>
-                    <Button onClick={() => setSelectedRecord(null)} appearance="subtle">
-                        Закрыть
-                    </Button>
-                </Modal.Footer>
-            </Modal>
+            {selectedRecord && <SelectedUserStorage currentUser={selectedRecord} handleCloseModal={handleCloseModal} />}
         </>
     );
+};
+
+const SelectedUserStorage = ({ currentUser, handleCloseModal }) => {
+    const modalBodyRef = useRef();
+    return (
+        <Modal backdrop="true" open={Boolean(currentUser)} onClose={handleCloseModal} size="lg">
+            <Modal.Header>Хранилище - {currentUser?.username}</Modal.Header>
+            <Modal.Body ref={modalBodyRef}>
+                <Storage parentRef={modalBodyRef} currentUser={currentUser || undefined} />
+            </Modal.Body>
+            <Modal.Footer>
+                <Button onClick={handleCloseModal} appearance="subtle">
+                    Закрыть
+                </Button>
+            </Modal.Footer>
+        </Modal>
+    );
+};
+
+SelectedUserStorage.propTypes = {
+    currentUser: PropTypes.object,
+    handleCloseModal: PropTypes.func,
 };
